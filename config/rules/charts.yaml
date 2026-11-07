@@ -1,0 +1,64 @@
+version: "1.0.0"
+metadata:
+  name: Cotality Analytics - chart clutter and readability rules
+  standard: "Analytics Tableau Design & Performance Guide, Version 3.0 (29 October 2026)"
+  checklist: "draft Tableau Dashboard Review - [Report Name].xlsx / Agent Review"
+  owner: "Analytics BI QC"
+
+rules:
+  - id: CTL-CHART-001
+    title: Unnecessary gridlines and banding must be removed
+    description: >
+      Charts and tables should reduce clutter by switching off gridlines,
+      borders and row/column banding that add no meaning.
+    category: Charts
+    scope: workbook
+    severity: LOW
+    standard_ref: "Design & Performance Guide v3.0, Chart Best Practices - Reduce Clutter"
+    checklist_ref: "Agent Review!B16"
+    tags: [charts, clutter]
+    assertions:
+      - field: style.chart_clutter_count
+        operator: equals
+        value: 0
+        description: Gridlines left visible plus banding left at a non-zero size
+    evidence_fields:
+      - style.visible_gridline_count
+      - style.active_banding_count
+    on_missing: NOT_APPLICABLE
+    on_violation: ADVISORY
+    message_pass: "Gridlines and banding are switched off across the workbook."
+    message_fail: >
+      {observed} gridline/banding declaration(s) are still active; confirm each
+      one is intentional.
+    recommendation: >
+      In Format > Lines switch off gridlines, zero lines and drop lines, and
+      set row/column banding size to 0 where it adds no meaning.
+
+  - id: CTL-CHART-002
+    title: Field labels should not be duplicated by axis headers
+    description: >
+      The guide asks for concise, horizontal axis labels - label the marks or
+      show the axis, but not both.
+    category: Charts
+    scope: used_worksheet
+    severity: LOW
+    standard_ref: "Design & Performance Guide v3.0, Chart Best Practices - Chart Labels"
+    checklist_ref: "Agent Review!B17"
+    tags: [charts, labels]
+    assertions:
+      - field: shows_labels_and_axes
+        operator: is_false
+        description: A view should not both label its marks and display axes
+    evidence_fields:
+      - mark_classes
+      - used_in_dashboards
+    on_missing: NOT_APPLICABLE
+    on_violation: ADVISORY
+    message_pass: "Worksheet '{target_name}' labels marks or shows axes, not both."
+    message_fail: >
+      Worksheet '{target_name}' both labels its marks and displays axis field
+      labels; consider removing one for a cleaner view.
+    recommendation: >
+      Either label the marks or show the axis, not both. Keep x-axis labels
+      horizontal and concise.

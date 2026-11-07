@@ -1,0 +1,10 @@
+# Optional SME feedback consumed by Agent 2.
+feedback:
+  - rule_id: CTL-LAYOUT-004
+    target_id: "Dashboard A:zone-10"
+    author: A. Shi
+    raised_on: 2025-10-01
+    comment: Increase the padding around the KPI tiles so the cards breathe.
+  - author: P. Vijayakumar
+    raised_on: 2025-10-01
+    comment: Confirm the Cotality logomark is present in the upper left corner.

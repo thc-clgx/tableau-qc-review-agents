@@ -1,0 +1,110 @@
+# Cotality content and layout standards consumed by the QC rules.
+#
+# These values are standards, not Tableau facts, so they live in YAML rather
+# than Python. A reviewer can extend this file without a developer.
+#
+# Override the location with the TABLEAU_QC_STANDARDS environment variable.
+
+version: "1.0.0"
+standard: "Analytics Tableau Design & Performance Guide, Version 3.0 (29 October 2026)"
+
+# --------------------------------------------------------------------------
+# Required dashboard metadata (Guide, Layout - Required Dashboard Elements).
+# An element counts as present when any of its phrases appears in the
+# workbook's visible text. Matching is case-insensitive.
+# --------------------------------------------------------------------------
+metadata_elements:
+  data_update_date:
+    - data last updated
+    - last updated
+    - last refresh
+  dashboard_contact:
+    - dashboard contact
+    - "contact:"
+  data_owner:
+    - data owner
+    - "owner:"
+
+# --------------------------------------------------------------------------
+# Interactivity instructions (Guide, Usability - Provide Clear Instructions).
+# A dashboard is considered to carry guidance when any phrase appears.
+# --------------------------------------------------------------------------
+interactivity_phrases:
+  - select
+  - click
+  - hover
+  - drill
+  - choose
+  - use the
+  - navigate
+
+# --------------------------------------------------------------------------
+# Logo placement (Guide, Layout - Required Dashboard Elements).
+# Tableau zone coordinates run 0-100000 across the dashboard, so 12500 is the
+# top-left eighth.
+# --------------------------------------------------------------------------
+logo:
+  upper_left_max_x: 12500
+  upper_left_max_y: 12500
+
+# --------------------------------------------------------------------------
+# Business-friendly naming (Guide, Naming and Labeling).
+# Regular expressions that mark a worksheet or field name as technical.
+# --------------------------------------------------------------------------
+naming_defect_patterns:
+  - "Calculation_\\d{6,}"
+  - "\\(copy\\)"
+  - "_c$"
+  - "\\bcopy\\b"
+
+# Text blocks exposing a generated calculation identifier to the end user.
+raw_calculation_pattern: "Calculation_\\d{6,}"
+
+# --------------------------------------------------------------------------
+# Spelling (Guide, Naming and Labeling - Spelling).
+# A curated list is used instead of a general dictionary so that product
+# names, abbreviations and business jargon are never falsely flagged.
+# Add new entries as `misspelling: correction`.
+# --------------------------------------------------------------------------
+misspellings:
+  survellance: surveillance
+  surveilance: surveillance
+  surveillence: surveillance
+  actipn: action
+  implemnt: implement
+  implment: implement
+  deail: detail
+  detial: detail
+  paramter: parameter
+  parameteer: parameter
+  defualt: default
+  recieve: receive
+  seperate: separate
+  occurance: occurrence
+  threshhold: threshold
+  lenght: length
+  widht: width
+  heigth: height
+  calender: calendar
+  sucess: success
+  sucessful: successful
+  availabe: available
+  avaliable: available
+  perfomance: performance
+  performace: performance
+  proformance: performance
+  unsatisfactoy: unsatisfactory
+  degraed: degraded
+  remediatied: remediated
+  analyitcs: analytics
+  anlytics: analytics
+  busines: business
+  buisness: business
+  deparment: department
+  departmnet: department
+  custmer: customer
+  custommer: customer
+  summry: summary
+  sumary: summary
+  montly: monthly
+  quartely: quarterly

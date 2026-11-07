@@ -1,0 +1,146 @@
+version: "1.0.0"
+name: Tableau Dashboard Review - Agent Review
+template: "draft Tableau Dashboard Review - [Report Name].xlsx"
+standard: "Analytics Tableau Design & Performance Guide, Version 3.0 (29 October 2026)"
+
+# Column layout of the Agent Review tab.
+answer_column: C
+comment_column: D
+
+# Rows 4, 9 and 21 are section headers in the spreadsheet, not questions, so
+# they are not listed here. Every remaining row is answered by the agent.
+sheets:
+  - sheet: Agent Review
+    items:
+      - id: AR-05
+        section: Analytics template questions
+        cell: B5
+        question: Official logo is in the upper left corner and is visible against background color
+        rules: [CTL-STRUCT-002, CTL-STRUCT-003]
+        residual: >
+          Image content cannot be read from XML. Confirm visually that the
+          logo is the correct asset and legible against the background.
+
+      - id: AR-06
+        section: Analytics template questions
+        cell: B6
+        question: Metadata complete (data update date, dashboard contact, data owner)
+        rules: [CTL-CONTENT-001]
+        residual: >
+          Presence of each label is verified; confirm the update date is
+          current and the named contact and owner are correct.
+
+      - id: AR-07
+        section: Analytics template questions
+        cell: B7
+        question: Arial font used throughout the dashboard. Worksheet titles are Arial Black
+        rules: [CTL-TYPO-001]
+
+      - id: AR-08
+        section: Analytics template questions
+        cell: B8
+        question: Current Cotality branding colors used
+        rules: [CTL-COLOR-001]
+
+      - id: AR-10
+        section: Analytics design questions
+        cell: B10
+        question: No more than 6 views in the dashboard
+        rules: [CTL-LAYOUT-003]
+
+      - id: AR-11
+        section: Analytics design questions
+        cell: B11
+        question: >-
+          Effective color usage with 1-2 dominant colors from Cotality primary palette.
+          Can be supplemented by Cotality secondary palette and neutrals. User accessibility considered
+        rules: [CTL-COLOR-002, CTL-COLOR-003]
+
+      - id: AR-12
+        section: Analytics design questions
+        cell: B12
+        question: Views are organized by importance (top to bottom, left to right)
+        rules: [CTL-STRUCT-004]
+        residual: >
+          Geometry is checked heuristically; whether the ordering matches
+          business importance is a human judgement.
+
+      - id: AR-13
+        section: Analytics design questions
+        cell: B13
+        question: Minimum of 10px for outer and inner padding between views
+        rules: [CTL-LAYOUT-004]
+
+      - id: AR-14
+        section: Analytics design questions
+        cell: B14
+        question: Text size primarily follows style guide
+        rules: [CTL-TYPO-002]
+
+      - id: AR-15
+        section: Analytics design questions
+        cell: B15
+        question: Consistent font sizes for each text category (dashboard title, chart headings, labels, tooltips)
+        rules: [CTL-TYPO-003]
+
+      - id: AR-16
+        section: Analytics design questions
+        cell: B16
+        question: Charts and tables have unnecessary gridlines and bandings reduced/removed
+        rules: [CTL-CHART-001]
+
+      - id: AR-17
+        section: Analytics design questions
+        cell: B17
+        question: Charts have concise, horizontal axis labels for the x-axis
+        rules: [CTL-CHART-002]
+        residual: >
+          Label and axis settings are checked; visual truncation and overlap
+          can only be confirmed by looking at the rendered dashboard.
+
+      - id: AR-18
+        section: Analytics design questions
+        cell: B18
+        question: Tiled containers primarily used over floating containers
+        rules: [CTL-STRUCT-001]
+
+      - id: AR-19
+        cell: B19
+        question: Does the dashboard have directions on interactivity (not including dropdown filters)?
+        rules: [CTL-CONTENT-002]
+        residual: >
+          Presence of instructional text is verified; whether it adequately
+          explains every action is a human judgement.
+
+      - id: AR-20
+        cell: B20
+        question: Do charts, tables, tooltips and other metrics have business friendly names and are spelled correctly?
+        rules: [CTL-CONTENT-003, CTL-CONTENT-004, CTL-CONTENT-005]
+
+      - id: AR-22
+        section: Other efficient workbook best practices
+        cell: B22
+        question: Limit custom SQL in live connections. Use Tableau relationships where possible
+        rules: [CTL-PERF-004]
+
+      - id: AR-23
+        section: Other efficient workbook best practices
+        cell: B23
+        question: Use "Show Apply Button" for multi-select filters
+        rules: [CTL-PERF-002]
+
+      - id: AR-24
+        section: Other efficient workbook best practices
+        cell: B24
+        question: Avoid filter lists with many unique values
+        rules: [CTL-PERF-003]
+        residual: >
+          The filter control type is checked. The number of distinct values
+          lives in the data extract, not the workbook XML, so cardinality must
+          be confirmed in Tableau Desktop.
+
+      - id: AR-25
+        section: Other efficient workbook best practices
+        cell: B25
+        question: Close unneeded sheets and hide sheets that are in use
+        rules: [CTL-HYG-001, CTL-HYG-002]

@@ -1,0 +1,90 @@
+version: "1.0.0"
+metadata:
+  name: Cotality Analytics - colour and accessibility rules
+  standard: "Analytics Tableau Design & Performance Guide, Version 3.0 (29 October 2026)"
+  checklist: "draft Tableau Dashboard Review - [Report Name].xlsx / Agent Review"
+  owner: "Analytics BI QC"
+
+rules:
+  - id: CTL-COLOR-001
+    title: Mark colours must come from Cotality brand palettes
+    description: >
+      Dashboards must use colours from Cotality's branding. Tableau's built-in
+      palettes (Tableau 10, Tableau 20, and similar) are not brand compliant.
+    category: Colour
+    scope: workbook
+    severity: HIGH
+    standard_ref: "Design & Performance Guide v3.0, Colors, section 1"
+    checklist_ref: "Agent Review!B8"
+    tags: [colour, branding]
+    assertions:
+      - field: built_in_palettes_used
+        operator: is_empty
+        description: No Tableau built-in colour palette may be assigned to marks
+    evidence_fields:
+      - custom_palettes
+      - mark_colours
+    on_missing: MANUAL_REVIEW
+    message_pass: "All mark colour palettes are Cotality brand palettes."
+    message_fail: "Non-brand Tableau palettes are assigned to marks: {observed}."
+    message_manual: >
+      No mark colour encodings are declared in the workbook XML; confirm the
+      palette selection in Tableau Desktop.
+    recommendation: >
+      Remove Tableau 10 / Tableau 20 palette assignments and re-encode marks
+      using the Cotality-Extended or CotalitySecondary custom palettes.
+
+  - id: CTL-COLOR-002
+    title: Views must not combine red and green marks
+    description: >
+      Red/green combinations are not distinguishable for colour-blind users.
+      The guide requires accessibility to be considered in colour choices.
+    category: Colour
+    scope: mark_palette
+    severity: HIGH
+    standard_ref: "Design & Performance Guide v3.0, Colors, section 3 Accessibility First"
+    checklist_ref: "Agent Review!B11"
+    tags: [colour, accessibility]
+    assertions:
+      - field: combines_red_and_green
+        operator: is_false
+        description: A single colour encoding must not use both red and green hues
+    evidence_fields:
+      - colour_values
+      - hue_families
+      - worksheet_name
+    on_missing: NOT_APPLICABLE
+    message_pass: "Colour encoding '{target_name}' does not combine red and green."
+    message_fail: "Colour encoding '{target_name}' combines red and green marks in one view."
+    recommendation: >
+      Replace the red/green pairing with a brand-compliant diverging palette
+      such as Teal (#077982) / Grey (#bab0ac) / Coral (#ff8e65).
+
+  - id: CTL-COLOR-003
+    title: A view should use 1-2 dominant colours
+    description: >
+      The guide asks for 1-2 dominant colours from the primary palette with
+      neutrals for other marks. High-saturation colour wheels dilute meaning.
+    category: Colour
+    scope: mark_palette
+    severity: MEDIUM
+    standard_ref: "Design & Performance Guide v3.0, Colors, section 1 Color Application"
+    checklist_ref: "Agent Review!B11"
+    tags: [colour, design]
+    assertions:
+      - field: distinct_colour_count
+        operator: less_than_or_equal
+        value: 6
+        description: Distinct explicit mark colours assigned in one encoding
+    evidence_fields:
+      - colour_values
+      - worksheet_name
+    on_missing: NOT_APPLICABLE
+    on_violation: ADVISORY
+    message_pass: "Colour encoding '{target_name}' uses {observed} distinct colours."
+    message_fail: >
+      Colour encoding '{target_name}' assigns {observed} distinct colours;
+      the guide asks for 1-2 dominant colours supported by neutrals.
+    recommendation: >
+      Reduce to 1-2 dominant primary-palette accents (Sunray, Coral or Violet)
+      and use neutral greys for the remaining mark values.

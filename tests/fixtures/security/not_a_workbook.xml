@@ -1,0 +1,4 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<datasource name='standalone' version='18.1'>
+  <column name='[Sales]' />
+</datasource>

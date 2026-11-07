@@ -1,0 +1,127 @@
+# SME feedback extracted from Tableau_Compliance_Review_Report.docx
+# Source: "Tableau Workbook Compliance Review Report - Technical & Design
+#          Quality Standards Evaluation", Audit Date October 2026.
+# Only the 11 items the report marked "N" (Fail) are carried forward for
+# post-review verification. Items mapped to a rule id are auto-verified by
+# Agent 2; the rest are reported as CANNOT_VERIFY for the reviewer to confirm.
+
+feedback:
+  - rule_id: CTL-LAYOUT-003
+    author: Tableau Compliance Review
+    raised_on: 2026-10-26
+    comment: >-
+      No more than 6 views in the dashboard - FAIL. 'Underperforming Models'
+      contains 11 views/worksheets, and 'Model Surveillance Executive Summary'
+      contains 7 views. Consolidate separate KPI and QoQ change worksheets into
+      combined KPI cards or bullet charts to reduce total views per dashboard
+      to 6 or fewer.
+
+  - rule_id: CTL-LAYOUT-004
+    author: Tableau Compliance Review
+    raised_on: 2026-10-26
+    comment: >-
+      Minimum of 10px for outer and inner padding between views - FAIL. Most
+      worksheet zones have outer margins set to 0px, 4px, or 8px and 0px inner
+      padding. Update all worksheet containers to use 20px outer padding
+      (minimum 10px) and 10-15px inner padding.
+
+  - author: Tableau Compliance Review
+    raised_on: 2026-10-26
+    comment: >-
+      Current Cotality branding colors used - FAIL. Multiple views utilize
+      default Tableau palettes (tableau20_10_0 and Tableau 10) containing
+      unbranded blues, greens, and oranges (#1f77b4, #4e79a7, #8cd17d,
+      #f28e2b). Re-encode all chart marks using the custom Cotality brand
+      palettes (Cotality-Extended and CotalitySecondary).
+
+  - author: Tableau Compliance Review
+    raised_on: 2026-10-26
+    comment: >-
+      Was the Analytics style guide followed? - FAIL. Several core style guide
+      tenets are violated, including maximum view thresholds, container tiling,
+      padding minimums, chart title sizing, and Cotality color standards.
+
+  - author: Tableau Compliance Review
+    raised_on: 2026-10-26
+    comment: >-
+      Effective color usage with 1-2 dominant colors and accessibility - FAIL.
+      Multiple charts use high-saturation color wheels with 7+ colors, and
+      several donut/bar views place standard red (#d62728/#f1384f) alongside
+      green (#2ca02c/#339b62). Restrict views to 1-2 dominant primary palette
+      accents and avoid red/green combinations for color-blind accessibility.
+
+  - author: Tableau Compliance Review
+    raised_on: 2026-10-26
+    comment: >-
+      Font type and text size follows style guide - FAIL. Worksheet titles
+      override standard styling with 10pt-12pt Arial instead of 15-16pt Arial
+      Black. Adjust dashboard titles to 24-28pt, chart titles to 15-16pt Arial
+      Black, headers to 11-12pt Arial, and labels to 10-11pt Arial.
+
+  - author: Tableau Compliance Review
+    raised_on: 2026-10-26
+    comment: >-
+      Consistent formatting for each text category - FAIL. Heading styles vary
+      arbitrarily across sheets (10pt unbolded in 'Total Models by Surveilance
+      Type', 11pt in 'Total Models by Performance', 12pt bolded in others).
+      Standardize font size, weight, and color across all chart headers.
+
+  - author: Tableau Compliance Review
+    raised_on: 2026-10-26
+    comment: >-
+      Tiled containers used whenever possible over floating containers - FAIL.
+      Parameter controls ('Sort By') and copyright footers are floating objects
+      (zones 440, 1173, 1159, 637) positioned over the views. Place all
+      parameter controls into dedicated tiled containers and nest the copyright
+      text into the tiled vertical flow.
+
+  - author: Tableau Compliance Review
+    raised_on: 2026-10-26
+    comment: >-
+      Are tooltips used effectively with meaningful titles and metrics? - FAIL.
+      Several tooltips contain blank labels, raw calculation field references,
+      and multiple misspellings ('Survellance', 'actipn'). Format all tooltips
+      with clean labels, correct spellings, and appropriate number formatting.
+
+  - author: Tableau Compliance Review
+    raised_on: 2026-10-26
+    comment: >-
+      Do charts, tables, tooltips and other metrics have business friendly
+      names? - FAIL. Many technical names and typos exist: 'Donut
+      chart-implemnt Deail in one', 'Total Models by Surveilance Type', 'Model
+      actipn plan_degrade only', 'Calculation_2211830417016991744'. Rename all
+      calculations, parameters, and sheet titles to business terminology.
+
+  - author: Tableau Compliance Review
+    raised_on: 2026-10-26
+    comment: >-
+      Run workbook Optimizer. Address Take Action and Needs Review items -
+      FAIL. Four Workbook Optimizer rules (ruleID 8, 12, 16, 17) are explicitly
+      configured with ignored='true'. Re-run Workbook Optimizer, un-ignore
+      these rules, and resolve the underlying issues.
+
+  - author: Tableau Compliance Review
+    raised_on: 2026-10-26
+    comment: >-
+      Does the dashboard follow efficient workbook best practices? - FAIL. The
+      workbook retains duplicate/overlapping calculated fields ('Surveillance
+      Type (copy)'), unreferenced parameters, and 12 simultaneous quick filters
+      per dashboard. Consolidate redundant calculations and remove unneeded
+      filters.
+
+  - author: Tableau Compliance Review
+    raised_on: 2026-10-26
+    comment: >-
+      Use "Show Apply Button" for multi-select filters - FAIL. Five
+      multi-select dropdown filters (checkdropdown) lack show-apply='true',
+      including 'Model_Surveillance_Implementation_Status' and 'Model
+      Surveillance Lead'. Enable 'Show Apply Button' on all multi-select
+      filters.
+
+  - author: Tableau Compliance Review
+    raised_on: 2026-10-26
+    comment: >-
+      Avoid filter lists with many unique values - FAIL. The 'Model Name'
+      filter contains 203 distinct string values configured as a multi-select
+      dropdown checklist, causing rendering overhead. Switch high-cardinality
+      filters to 'Wildcard Match' or 'Custom List' search controls.
