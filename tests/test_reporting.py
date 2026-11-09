@@ -246,3 +246,41 @@ def test_review_xlsx_reopens_cleanly(review_report, tmp_path):
     reopened = openpyxl.load_workbook(path)
     assert "Agent Review" in reopened.sheetnames
     assert reopened["Agent Review"].cell(row=10, column=3).value in {"Y", "N"}
+
+
+# -- cross-format consistency ---------------------------------------------
+def _pdf_answers(path, checklist) -> dict:
+    """Pull the Y/N answer for each checklist row out of the rendered PDF."""
+    import re
+
+    from pypdf import PdfReader
+
+    text = re.sub(r"\s+", " ", " ".join(p.extract_text() or "" for p in PdfReader(str(path)).pages))
+    answers = {}
+    for result in checklist:
+        match = re.search(rf"\b{re.escape(result.item_id)}\b\s+(.*?)\s+\b([YN])\b", text)
+        if match:
+            answers[result.cell] = match.group(2)
+    return answers
+
+
+def test_excel_and_pdf_report_identical_answers(review_report, tmp_path):
+    """A reviewer must never see one verdict in Excel and another in the PDF."""
+    template = excel_template_or_none()
+    if template is None:
+        pytest.skip("review template not available")
+
+    xlsx = ExcelReportWriter(template).write_review(review_report, tmp_path / "x.xlsx")
+    pdf = write_pdf_report(review_report, tmp_path / "x.pdf")
+
+    expected = {r.cell: r.pass_flag for r in review_report.checklist}
+
+    sheet = openpyxl.load_workbook(xlsx)["Agent Review"]
+    excel_answers = {
+        f"B{row}": sheet.cell(row=row, column=3).value
+        for row in range(4, 26)
+        if sheet.cell(row=row, column=3).value
+    }
+
+    assert excel_answers == expected
+    assert _pdf_answers(pdf, review_report.checklist) == expected

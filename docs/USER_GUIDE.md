@@ -460,7 +460,7 @@ python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 # Validate the rule repository against the checklist (CI-friendly)
 .venv/bin/tableau-qc rules --strict
 
-# Run the test suite (444 tests)
+# Run the test suite (445 tests)
 .venv/bin/python -m pytest tests -q
 ```
 
@@ -475,7 +475,7 @@ python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 
 ## 12. Assurance
 
-- **444 automated tests**, all passing.
+- **445 automated tests**, all passing.
 - **Every rule has a passing and a failing fixture**, so no rule can silently stop working.
 - **Deterministic** — identical input always produces identical output; verified by test.
 - **Every automated PASS/FAIL carries evidence**: field, expected, observed and XPath.

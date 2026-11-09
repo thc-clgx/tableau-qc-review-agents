@@ -4,7 +4,7 @@
 > Cotality *Analytics Tableau Design & Performance Guide v3.0* and the
 > *Tableau Dashboard Review* checklist.
 
-[![tests](https://img.shields.io/badge/tests-444%20passing-brightgreen)]()
+[![tests](https://img.shields.io/badge/tests-445%20passing-brightgreen)]()
 [![python](https://img.shields.io/badge/python-3.10%2B-blue)]()
 [![rules](https://img.shields.io/badge/QC%20rules-19-orange)]()
 
@@ -233,7 +233,7 @@ value, the observed value, and the source XPath — available in the JSON report
 │   ├── workbooks/      Example workbook XML (original + remediated)
 │   ├── standards/      Style guide and checklist template
 │   └── reviews/        A human review report and SME feedback sample
-├── tests/              444 tests incl. per-rule and security fixtures
+├── tests/              445 tests incl. per-rule and security fixtures
 ├── scripts/            Fixture generation and remediation helpers
 └── docs/
     ├── USER_GUIDE.md   Full operating guide
@@ -307,7 +307,7 @@ Validate at any time with `tableau-qc rules --strict`.
 ## Development
 
 ```bash
-.venv/bin/python -m pytest tests -q          # 444 tests
+.venv/bin/python -m pytest tests -q          # 445 tests
 .venv/bin/python -m pytest tests -q --cov    # with coverage (if pytest-cov installed)
 .venv/bin/tableau-qc rules --strict          # validate the rule repository
 ```
