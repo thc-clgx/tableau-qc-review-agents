@@ -107,7 +107,7 @@ def test_run_and_export_writes_all_artifacts(agent, sample_xml_path, tmp_path):
     assert data["summary"]["overall_status"] == report.summary["overall_status"]
 
     workbook = openpyxl.load_workbook(artifacts.excel_path)
-    assert workbook.sheetnames == ["Agent Review"]
+    assert "Agent Review" in workbook.sheetnames
 
 
 def test_results_are_deterministic(agent, sample_xml_path):

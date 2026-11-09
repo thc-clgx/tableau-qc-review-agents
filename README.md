@@ -4,7 +4,7 @@
 > Cotality *Analytics Tableau Design & Performance Guide v3.0* and the
 > *Tableau Dashboard Review* checklist.
 
-[![tests](https://img.shields.io/badge/tests-439%20passing-brightgreen)]()
+[![tests](https://img.shields.io/badge/tests-444%20passing-brightgreen)]()
 [![python](https://img.shields.io/badge/python-3.10%2B-blue)]()
 [![rules](https://img.shields.io/badge/QC%20rules-19-orange)]()
 
@@ -19,9 +19,10 @@ not in the XML it says so instead of passing the item.
 | **Answers** | "Does this meet our standards?" | "Were the cited issues fixed, and did the fix break anything?" |
 | **Output** | Filled checklist + findings (XLSX / JSON / PDF) | Per-issue resolution + regression check |
 
-**Scope:** the agent owns the **Agent Review** tab only — 19 questions, 19 rules, one
-rule per question, every answer **Y or N**. The Peer Review and Tech Review tabs are the
-human review portions and are left untouched.
+**Scope:** the agent fills the **Agent Review** tab only — 19 questions, 19 rules, one
+rule per question, every answer **Y or N**. All other tabs are preserved exactly as the
+template defines them: the Peer Review and Tech Review tabs are the human review portions
+and are handed back untouched.
 
 ---
 
@@ -125,7 +126,7 @@ Add `--strict` to fail the command on a dangling reference (useful in CI).
 
 | File | Audience |
 |---|---|
-| `<name>_pre_review.xlsx` | **The developer** — the **Agent Review tab only**, with `Pass (Y/N)` and `Recommended Changes` filled in |
+| `<name>_pre_review.xlsx` | **The developer** — the full review template with the **Agent Review tab** filled in (`Pass (Y/N)` and `Recommended Changes`); every other tab is left blank for the human reviewer |
 | `<name>_pre_review.json` | **Agent 2** — keep this, it is the baseline audit |
 | `<name>_pre_review.pdf` | Stakeholders |
 
@@ -232,7 +233,7 @@ value, the observed value, and the source XPath — available in the JSON report
 │   ├── workbooks/      Example workbook XML (original + remediated)
 │   ├── standards/      Style guide and checklist template
 │   └── reviews/        A human review report and SME feedback sample
-├── tests/              439 tests incl. per-rule and security fixtures
+├── tests/              444 tests incl. per-rule and security fixtures
 ├── scripts/            Fixture generation and remediation helpers
 └── docs/
     ├── USER_GUIDE.md   Full operating guide
@@ -306,7 +307,7 @@ Validate at any time with `tableau-qc rules --strict`.
 ## Development
 
 ```bash
-.venv/bin/python -m pytest tests -q          # 439 tests
+.venv/bin/python -m pytest tests -q          # 444 tests
 .venv/bin/python -m pytest tests -q --cov    # with coverage (if pytest-cov installed)
 .venv/bin/tableau-qc rules --strict          # validate the rule repository
 ```
@@ -347,8 +348,8 @@ the underlying fact. These still answer Y/N, but a reviewer may wish to spot-che
 | Filter lists with many values | The filter control type | The number of distinct values (lives in the extract) |
 | Views organised by importance | Zone geometry and size hierarchy | Business importance of each view |
 
-The **Peer Review** and **Tech Review** tabs are deliberately out of scope — they are the
-human review portions of the checklist.
+The **Peer Review** and **Tech Review** tabs are deliberately out of scope. They remain in
+the output workbook, blank, for the human reviewer to complete.
 
 ### Not implemented by design
 

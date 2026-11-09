@@ -50,40 +50,40 @@ class ExcelReportWriter:
 
     # -- public API --------------------------------------------------------
     def write_review(self, report: ReviewReport, path: PathLike) -> Path:
-        """Write the review workbook containing only the agent's own tab."""
+        """Write the review workbook with only the Agent Review tab filled in."""
         workbook = self._open_workbook()
         self._populate_checklist(workbook, report.checklist)
-        self._keep_only_agent_tabs(workbook, report.checklist)
+        self._focus_agent_tab(workbook, report.checklist)
         return self._save(workbook, path)
 
     def write_verification(self, report: VerificationReport, path: PathLike) -> Path:
         workbook = self._open_workbook()
         self._populate_checklist(workbook, report.checklist)
-        self._keep_only_agent_tabs(workbook, report.checklist)
+        self._focus_agent_tab(workbook, report.checklist)
         return self._save(workbook, path)
 
     @staticmethod
-    def _keep_only_agent_tabs(workbook: XLWorkbook, results: Sequence[ChecklistResult]) -> None:
-        """Remove every sheet the agent did not fill.
+    def _focus_agent_tab(workbook: XLWorkbook, results: Sequence[ChecklistResult]) -> None:
+        """Open the workbook on the tab the agent filled.
 
-        The Peer Review and Tech Review tabs are the human review portions, so
-        the agent's output carries its own tab alone.
-
-        The template's workbook view points at the Agent Review tab by index
-        (``firstSheet``/``activeTab``). Once the surrounding sheets are gone
-        those indices fall outside the remaining range, which Excel reports as
-        a corrupt file, so the view is reset to the single surviving sheet.
+        Every template tab is preserved - the Peer Review and Tech Review tabs
+        are the human review portions and are handed back untouched. Only the
+        selected tab changes, so the file opens on the agent's results.
         """
-        answered = {r.sheet for r in results if r.sheet}
-        for name in list(workbook.sheetnames):
-            if name not in answered:
-                del workbook[name]
+        answered = [r.sheet for r in results if r.sheet]
+        if not answered:
+            return
+        target = answered[0]
+        if target not in workbook.sheetnames:
+            return
 
+        index = workbook.sheetnames.index(target)
         for view in getattr(workbook, "views", []) or []:
+            view.activeTab = index
+            # firstSheet must not exceed the active tab or Excel rejects the view.
             view.firstSheet = 0
-            view.activeTab = 0
-        for index, sheet in enumerate(workbook.worksheets):
-            sheet.views.sheetView[0].tabSelected = index == 0
+        for position, sheet in enumerate(workbook.worksheets):
+            sheet.views.sheetView[0].tabSelected = position == index
 
     # -- workbook plumbing -------------------------------------------------
     def _open_workbook(self) -> XLWorkbook:

@@ -209,7 +209,7 @@ def test_run_and_export_writes_reports(agent, rule_fixtures_dir, tmp_path):
     assert artifacts.pdf_path.read_bytes().startswith(b"%PDF")
 
     workbook = openpyxl.load_workbook(artifacts.excel_path)
-    assert workbook.sheetnames == ["Agent Review"]
+    assert "Agent Review" in workbook.sheetnames
     sheet = workbook["Agent Review"]
     answers = {
         sheet.cell(row=r, column=3).value

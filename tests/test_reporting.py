@@ -54,11 +54,55 @@ def test_load_json_report_missing(tmp_path):
         load_json_report(tmp_path / "absent.json")
 
 
-def test_excel_report_contains_only_the_agent_tab(review_report, tmp_path):
-    """The agent fills its own tab; Peer and Tech Review stay human-owned."""
+def test_excel_report_fills_only_the_agent_tab(review_report, tmp_path):
+    """Without a template only the agent's tab is created."""
     path = ExcelReportWriter(None).write_review(review_report, tmp_path / "report.xlsx")
     workbook = openpyxl.load_workbook(path)
     assert workbook.sheetnames == ["Agent Review"]
+
+
+def test_template_tabs_are_all_preserved(review_report, tmp_path):
+    """Every template tab survives; the agent only writes into its own."""
+    template = excel_template_or_none()
+    if template is None:
+        pytest.skip("review template not available")
+    path = ExcelReportWriter(template).write_review(review_report, tmp_path / "tabs.xlsx")
+
+    written = openpyxl.load_workbook(path)
+    original = openpyxl.load_workbook(template)
+    assert written.sheetnames == original.sheetnames
+
+
+def test_human_tabs_are_left_untouched(review_report, tmp_path):
+    """Peer Review and Tech Review are the human portions of the checklist."""
+    template = excel_template_or_none()
+    if template is None:
+        pytest.skip("review template not available")
+    path = ExcelReportWriter(template).write_review(review_report, tmp_path / "human.xlsx")
+
+    written = openpyxl.load_workbook(path)
+    original = openpyxl.load_workbook(template)
+    for name in written.sheetnames:
+        if name == "Agent Review":
+            continue
+        out_sheet, tpl_sheet = written[name], original[name]
+        rows = max(out_sheet.max_row, tpl_sheet.max_row)
+        for row in range(1, rows + 1):
+            for column in range(1, 5):
+                assert out_sheet.cell(row, column).value == tpl_sheet.cell(row, column).value, (
+                    f"{name}!{row},{column} was modified"
+                )
+
+
+def test_workbook_opens_on_the_agent_tab(review_report, tmp_path):
+    template = excel_template_or_none()
+    if template is None:
+        pytest.skip("review template not available")
+    path = ExcelReportWriter(template).write_review(review_report, tmp_path / "active.xlsx")
+
+    workbook = openpyxl.load_workbook(path)
+    expected = workbook.sheetnames.index("Agent Review")
+    assert workbook.views[0].activeTab == expected
 
 
 def test_excel_report_populates_template(review_report, tmp_path):
@@ -68,7 +112,7 @@ def test_excel_report_populates_template(review_report, tmp_path):
     path = ExcelReportWriter(template).write_review(review_report, tmp_path / "filled.xlsx")
     workbook = openpyxl.load_workbook(path)
 
-    assert workbook.sheetnames == ["Agent Review"]
+    assert "Agent Review" in workbook.sheetnames
     sheet = workbook["Agent Review"]
     assert sheet.cell(row=3, column=2).value == "Question"  # template preserved
     assert sheet.cell(row=10, column=3).value == "N"  # more than 6 views
@@ -200,5 +244,5 @@ def test_review_xlsx_reopens_cleanly(review_report, tmp_path):
         pytest.skip("review template not available")
     path = ExcelReportWriter(template).write_review(review_report, tmp_path / "reopen.xlsx")
     reopened = openpyxl.load_workbook(path)
-    assert reopened.sheetnames == ["Agent Review"]
+    assert "Agent Review" in reopened.sheetnames
     assert reopened["Agent Review"].cell(row=10, column=3).value in {"Y", "N"}

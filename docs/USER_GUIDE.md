@@ -22,8 +22,9 @@ There are two agents that share one parser and one rule engine:
 | **Output** | Filled checklist + findings (JSON / Excel / PDF) | Resolution status per issue + regression check |
 
 **Scope:** the agent fills the **Agent Review** tab only — 19 questions answered by 19
-rules, one rule per question, every answer **Y or N**. The Peer Review and Tech Review
-tabs are the human review portions and are left untouched by the agent.
+rules, one rule per question, every answer **Y or N**. All other tabs are preserved
+exactly as the template defines them; the Peer Review and Tech Review tabs are the human
+review portions and are handed back blank for a reviewer to complete.
 
 > **The input is always XML.** The framework does not open `.twb`/`.twbx` archives,
 > connect to Tableau Server or Cloud, or convert workbooks. Export the XML first.
@@ -164,7 +165,7 @@ With an explicit output name and folder:
 
 | File | Audience | Contents |
 |---|---|---|
-| `<name>_pre_review.xlsx` | **The developer** | Your review template with `Pass (Y/N)` and `Recommended Changes` filled in on the Agent Review and Tech Review tabs, plus added `QC Summary` and `QC Findings` tabs |
+| `<name>_pre_review.xlsx` | **The developer** | Your review template, unchanged except for the **Agent Review** tab, where `Pass (Y/N)` and `Recommended Changes` are filled in. The workbook opens on that tab |
 | `<name>_pre_review.json` | **Agent 2** | Machine-readable audit — keep it, Agent 2 matches against it |
 | `<name>_pre_review.pdf` | Stakeholders | Printable summary |
 
@@ -459,7 +460,7 @@ python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 # Validate the rule repository against the checklist (CI-friendly)
 .venv/bin/tableau-qc rules --strict
 
-# Run the test suite (439 tests)
+# Run the test suite (444 tests)
 .venv/bin/python -m pytest tests -q
 ```
 
@@ -474,7 +475,7 @@ python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 
 ## 12. Assurance
 
-- **439 automated tests**, all passing.
+- **444 automated tests**, all passing.
 - **Every rule has a passing and a failing fixture**, so no rule can silently stop working.
 - **Deterministic** — identical input always produces identical output; verified by test.
 - **Every automated PASS/FAIL carries evidence**: field, expected, observed and XPath.
