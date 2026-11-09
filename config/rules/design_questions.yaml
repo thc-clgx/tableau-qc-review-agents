@@ -1,0 +1,253 @@
+version: "3.0.0"
+metadata:
+  name: Agent Review - Analytics design questions (rows 10-18)
+  standard: "Analytics Tableau Design & Performance Guide, Version 3.0 (29 October 2026)"
+  checklist: "draft Tableau Dashboard Review - [Report Name].xlsx / Agent Review"
+  owner: "Analytics BI QC"
+
+rules:
+  - id: CTL-LAYOUT-003
+    title: No more than 6 views in the dashboard
+    description: >
+      More than six worksheet views in a dashboard harms performance and
+      confuses the audience.
+    category: Design
+    scope: dashboard
+    severity: HIGH
+    standard_ref: "Design & Performance Guide v3.0, Dashboard Best Practices - Limit Views to 6 or Fewer"
+    checklist_ref: "Agent Review!B10"
+    tags: [design, views, performance]
+    assertions:
+      - field: view_count
+        operator: less_than_or_equal
+        value: 6
+        description: Worksheet view zones placed on the dashboard
+    evidence_fields:
+      - worksheet_names
+    on_missing: FAIL
+    message_pass: "Dashboard '{target_name}' contains {observed} views (limit 6)."
+    message_fail: "Dashboard '{target_name}' contains {observed} views; the limit is 6."
+    recommendation: >
+      Reduce the dashboard to at most 6 views. Consolidate related KPI
+      worksheets into combined cards, or move secondary analysis to another
+      dashboard.
+
+  - id: CTL-COLOR-002
+    title: Effective colour usage with 1-2 dominant colours and accessibility considered
+    description: >
+      Views should lead with 1-2 dominant primary-palette colours supported by
+      neutrals, and must not pair red with green, which colour-blind users
+      cannot separate.
+    category: Design
+    scope: mark_palette
+    severity: HIGH
+    standard_ref: "Design & Performance Guide v3.0, Colors - Color Application and Accessibility First"
+    checklist_ref: "Agent Review!B11"
+    tags: [design, colour, accessibility]
+    assertions:
+      - field: combines_red_and_green
+        operator: is_false
+        description: A colour encoding must not use both red and green hues
+      - field: distinct_colour_count
+        operator: less_than_or_equal
+        value: 6
+        description: Distinct explicit mark colours in one encoding
+    evidence_fields:
+      - colour_values
+      - worksheet_name
+    on_missing: FAIL
+    message_pass: "Colour encoding '{target_name}' uses an accessible, focused palette."
+    message_fail: "Colour encoding '{target_name}' is not compliant: {observed}."
+    recommendation: >
+      Restrict each view to 1-2 dominant primary-palette accents (Sunray, Coral
+      or Violet) with neutral greys for other marks, and replace any red/green
+      pairing with a brand-compliant diverging palette such as Teal / Grey /
+      Coral.
+
+  - id: CTL-STRUCT-004
+    title: Views are organised by importance (top to bottom, left to right)
+    description: >
+      Aggregated summary metrics belong at the top; granular tables and detail
+      charts belong below them.
+    category: Design
+    scope: dashboard
+    severity: MEDIUM
+    standard_ref: "Design & Performance Guide v3.0, Layout - Organize by Importance"
+    checklist_ref: "Agent Review!B12"
+    tags: [design, hierarchy]
+    assertions:
+      - field: largest_view_is_not_first
+        operator: is_false
+        description: The topmost view must not also be the largest one
+    evidence_fields:
+      - views_in_reading_order
+      - view_count
+    on_missing: NOT_APPLICABLE
+    message_pass: "Dashboard '{target_name}' leads with summary views above larger detail views."
+    message_fail: "Dashboard '{target_name}' places its largest, most detailed view at the top."
+    message_not_applicable: "Dashboard '{target_name}' has no size hierarchy to assess."
+    recommendation: >
+      Move aggregated KPI views to the top of the dashboard and place granular
+      tables and detailed charts below them.
+
+  - id: CTL-LAYOUT-004
+    title: Minimum of 10px for outer and inner padding between views
+    description: >
+      The Analytics template uses 20px outer padding (minimum 10px) and 10-15px
+      inner padding to separate views.
+    category: Design
+    scope: dashboard_view_zone
+    severity: MEDIUM
+    standard_ref: "Design & Performance Guide v3.0, Layout - Padding"
+    checklist_ref: "Agent Review!B13"
+    tags: [design, padding]
+    applies_when:
+      - field: references_worksheet
+        operator: is_true
+        description: Only zones that embed a worksheet are assessed
+    assertions:
+      - field: outer_padding.minimum
+        operator: greater_than_or_equal
+        value: 10
+        description: Smallest declared outer padding in pixels
+      - field: inner_padding.minimum
+        operator: greater_than_or_equal
+        value: 10
+        description: Smallest declared inner padding in pixels
+    evidence_fields:
+      - dashboard_name
+    on_missing: FAIL
+    message_pass: "View zone '{target_name}' meets the 10px minimum padding requirement."
+    message_fail: "View zone '{target_name}' uses {observed}px padding; at least 10px is required."
+    recommendation: >
+      Select each view in the dashboard Layout pane and set outer padding to
+      20px (minimum 10px) and inner padding to 10-15px.
+
+  - id: CTL-TYPO-002
+    title: Text size primarily follows style guide
+    description: >
+      Permitted sizes are dashboard title 24-28, subtitle/chart title 15-16,
+      chart header 11-12 and labels/other text 10-11.
+    category: Design
+    scope: workbook
+    severity: MEDIUM
+    standard_ref: "Design & Performance Guide v3.0, Typography size table"
+    checklist_ref: "Agent Review!B14"
+    tags: [design, typography]
+    assertions:
+      - field: style.font_sizes
+        operator: all_in
+        value: [10, 11, 12, 15, 16, 24, 25, 26, 27, 28]
+        description: Every declared font size must fall in an approved band
+    evidence_fields:
+      - style.text_categories
+    # No declared sizes means Tableau defaults are in use, which have not been
+    # verified against the guide bands.
+    treat_empty_as_missing: true
+    on_missing: FAIL
+    message_pass: "All declared text sizes fall within the style guide bands."
+    message_fail: "Text sizes outside the style guide bands are used: {observed}."
+    recommendation: >
+      Set dashboard titles to 24-28pt, chart titles to 15-16pt Arial Black,
+      chart headers to 11-12pt and labels/other text to 10-11pt.
+
+  - id: CTL-TYPO-003
+    title: Consistent font sizes for each text category
+    description: >
+      Each category of text - dashboard title, chart heading, label, tooltip -
+      must use a single font size throughout the workbook.
+    category: Design
+    scope: workbook
+    severity: MEDIUM
+    standard_ref: "Design & Performance Guide v3.0, Typography"
+    checklist_ref: "Agent Review!B15"
+    tags: [design, typography, consistency]
+    assertions:
+      - field: style.inconsistent_text_categories
+        operator: is_empty
+        description: No text category may declare more than one font size
+    evidence_fields:
+      - style.text_categories
+      - style.font_sizes
+    on_missing: FAIL
+    message_pass: "Every text category uses a single consistent font size."
+    message_fail: "These text categories mix several font sizes: {observed}."
+    recommendation: >
+      Standardise the font size, weight and colour used within each text
+      category so all chart headers, labels and tooltips match.
+
+  - id: CTL-CHART-001
+    title: Unnecessary gridlines and bandings reduced or removed
+    description: >
+      Charts and tables should switch off gridlines, zero lines and row/column
+      banding that carry no meaning.
+    category: Design
+    scope: workbook
+    severity: LOW
+    standard_ref: "Design & Performance Guide v3.0, Chart Best Practices - Reduce Clutter"
+    checklist_ref: "Agent Review!B16"
+    tags: [design, charts, clutter]
+    assertions:
+      - field: style.chart_clutter_count
+        operator: equals
+        value: 0
+        description: Visible gridlines plus banding left at a non-zero size
+    evidence_fields:
+      - style.visible_gridline_count
+      - style.active_banding_count
+    on_missing: FAIL
+    message_pass: "Gridlines and banding are switched off across the workbook."
+    message_fail: "{observed} gridline/banding declaration(s) are still active."
+    recommendation: >
+      In Format > Lines switch off gridlines, zero lines and drop lines, and set
+      row/column banding size to 0 where it adds no meaning.
+
+  - id: CTL-CHART-002
+    title: Charts have concise, horizontal axis labels for the x-axis
+    description: >
+      Label the marks or show the axis, but not both. Duplicating field labels
+      alongside mark labels clutters the view.
+    category: Design
+    scope: used_worksheet
+    severity: LOW
+    standard_ref: "Design & Performance Guide v3.0, Chart Best Practices - Chart Labels"
+    checklist_ref: "Agent Review!B17"
+    tags: [design, charts, labels]
+    assertions:
+      - field: shows_labels_and_axes
+        operator: is_false
+        description: A view must not both label its marks and show axis field labels
+    evidence_fields:
+      - mark_classes
+      - used_in_dashboards
+    on_missing: FAIL
+    message_pass: "Worksheet '{target_name}' labels marks or shows axes, not both."
+    message_fail: "Worksheet '{target_name}' both labels marks and shows axis field labels."
+    recommendation: >
+      Either label the marks or show the axis, not both, and keep x-axis labels
+      horizontal and concise.
+
+  - id: CTL-STRUCT-001
+    title: Tiled containers primarily used over floating containers
+    description: >
+      Charts, KPIs and filters should sit in tiled containers so the layout
+      renders predictably once published.
+    category: Design
+    scope: dashboard
+    severity: MEDIUM
+    standard_ref: "Design & Performance Guide v3.0, Layout - Use Tiled Containers by Default"
+    checklist_ref: "Agent Review!B18"
+    tags: [design, structure, floating]
+    assertions:
+      - field: floating_zone_count
+        operator: equals
+        value: 0
+        description: Objects positioned outside the tiled layout tree
+    evidence_fields:
+      - tiled_zone_count
+    on_missing: FAIL
+    message_pass: "Dashboard '{target_name}' places every object in tiled containers."
+    message_fail: "Dashboard '{target_name}' has {observed} floating object(s)."
+    recommendation: >
+      Dock floating parameter controls and text objects into the tiled layout
+      container so they render predictably when published.

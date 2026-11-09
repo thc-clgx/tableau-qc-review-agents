@@ -1,74 +1,64 @@
 <?xml version='1.0' encoding='utf-8' ?>
 <!-- Fixture: compliant Sheet 1 plus a newly added non-compliant Sheet 2 zone -->
-<workbook original-version='18.1' source-build='2025.3.1 (20253.25.1210.1815)' source-platform='win' version='18.1'>
-  <repository-location id='FixtureWorkbook' path='/t/cotalityanalytics/workbooks' site='cotalityanalytics' />
-  <preferences>
-    <preference name='ui.encoding.shelf.height' value='24' />
-  </preferences>
+<workbook original-version='18.1' source-build='2025.3.1' source-platform='win' version='18.1'>
+  <repository-location id='AddedZone' path='/t/cotalityanalytics/workbooks' site='cotalityanalytics' />
   <style>
     <style-rule element='worksheet'>
       <format attr='font-family' value='Arial' />
-      <format attr='color' value='#1e1405' />
     </style-rule>
     <style-rule element='worksheet-title'>
       <format attr='font-family' value='Arial Black' />
-      <format attr='color' value='#1e1405' />
     </style-rule>
   </style>
   <datasources>
     <datasource caption='Sales' inline='true' name='federated.sales' version='18.1'>
       <connection class='federated'>
         <named-connections>
-          <named-connection caption='analytics' name='bigquery.1'>
-            <connection class='bigquery' dbname='analytics' server='bigquery.googleapis.com' />
+          <named-connection caption='db' name='sqlserver.1'>
+            <connection class='sqlserver' dbname='analytics' server='db.internal' />
           </named-connection>
         </named-connections>
+        <relation name='t' table='[dbo].[t]' type='table' />
       </connection>
-      <column caption='Profit Ratio' datatype='real' name='[Calculation_1]' role='measure' type='quantitative'>
-        <calculation class='tableau' formula='SUM([Profit])/SUM([Sales])' />
-      </column>
+      <extract enabled='true' />
       <column caption='Sales' datatype='real' name='[Sales]' role='measure' type='quantitative' />
     </datasource>
   </datasources>
   <worksheets>
     <worksheet name='Sheet 1'>
+      <layout-options>
+        <title>
+          <formatted-text><run fontname='Arial Black' fontsize='15'>Sheet 1</run></formatted-text>
+        </title>
+      </layout-options>
       <table>
-        <view>
-          <datasource-dependencies datasource='federated.sales' />
-          <filter class='categorical' column='[federated.sales].[none:Category:nk]' />
-        </view>
+        <view><datasource-dependencies datasource='federated.sales' /></view>
         <style>
           <style-rule element='mark'>
-            <format attr='mark-labels-show' value='true' />
+            <format attr='line-visibility' value='off' />
+            <format attr='band-size' value='0' />
           </style-rule>
         </style>
-        <panes>
-          <pane>
-            <mark class='Bar' />
-          </pane>
-        </panes>
-        <rows />
-        <cols />
+        <panes><pane><mark class='Bar' /></pane></panes>
+        <rows /><cols />
       </table>
     </worksheet>
     <worksheet name='Sheet 2'>
+      <layout-options>
+        <title>
+          <formatted-text><run fontname='Arial Black' fontsize='15'>Sheet 2</run></formatted-text>
+        </title>
+      </layout-options>
       <table>
-        <view>
-          <datasource-dependencies datasource='federated.sales' />
-          <filter class='categorical' column='[federated.sales].[none:Category:nk]' />
-        </view>
+        <view><datasource-dependencies datasource='federated.sales' /></view>
         <style>
           <style-rule element='mark'>
-            <format attr='mark-labels-show' value='true' />
+            <format attr='line-visibility' value='off' />
+            <format attr='band-size' value='0' />
           </style-rule>
         </style>
-        <panes>
-          <pane>
-            <mark class='Bar' />
-          </pane>
-        </panes>
-        <rows />
-        <cols />
+        <panes><pane><mark class='Bar' /></pane></panes>
+        <rows /><cols />
       </table>
     </worksheet>
   </worksheets>
@@ -76,32 +66,38 @@
     <dashboard name='Dashboard A'>
       <style />
       <size maxheight='900' maxwidth='1600' minheight='900' minwidth='1600' />
-      <datasource-dependencies datasource='federated.sales' />
       <zones>
-        <zone h='100000' id='1' type-v2='layout-basic' w='100000' x='0' y='0'>
-          <zone h='40000' id='10' name='Sheet 1' w='40000' x='0' y='0'>
-            <layout-cache type-h='scalable' type-w='fixed' />
+        <zone h='100000' id='1' type-v2='layout-flow' w='100000' x='0' y='0'>
+          <zone h='30000' id='10' name='Sheet 1' w='30000' x='0' y='0'>
             <zone-style>
-              <format attr='border-color' value='#000000' />
-              <format attr='border-style' value='none' />
               <format attr='margin' value='20' />
               <format attr='padding' value='12' />
             </zone-style>
           </zone>
-
-          <zone h='40000' id='11' name='Sheet 2' w='40000' x='33000' y='0'>
-            <layout-cache type-h='scalable' type-w='fixed' />
+          <zone h='30000' id='11' name='Sheet 2' w='30000' x='0' y='0'>
             <zone-style>
-              <format attr='border-color' value='#000000' />
-              <format attr='border-style' value='none' />
               <format attr='margin' value='4' />
               <format attr='padding' value='0' />
             </zone-style>
           </zone>
+          <zone h='5000' id='50' mode='checkdropdown' name='Sheet 1' param='[federated.sales].[none:Category:nk]' type-v2='filter' values='database' show-apply='true' w='16000' x='84000' y='0'>
+            <zone-style><format attr='margin' value='20' /><format attr='padding' value='12' /></zone-style>
+          </zone>
+          <zone h='8000' id='90' type-v2='bitmap' w='12000' x='0' y='0'>
+            <zone-style><format attr='margin' value='20' /><format attr='padding' value='12' /></zone-style>
+            <bitmap param='/Template Files/Image/cotality logomark.png' />
+          </zone>
+          <zone h='4000' id='91' type-v2='text' w='100000' x='0' y='92000'>
+            <zone-style><format attr='margin' value='20' /><format attr='padding' value='12' /></zone-style>
+            <formatted-text><run fontname='Arial' fontsize='11'>Data Last Updated: 2026-10-29 | Dashboard Contact: A Shi | Data Owner: P Vijayakumar</run></formatted-text>
+          </zone>
+          <zone h='4000' id='92' type-v2='text' w='100000' x='0' y='86000'>
+            <zone-style><format attr='margin' value='20' /><format attr='padding' value='12' /></zone-style>
+            <formatted-text><run fontname='Arial' fontsize='11'>Select a bar in the chart above to filter the detail table below.</run></formatted-text>
+          </zone>
         </zone>
       </zones>
       <devicelayouts />
-      <simple-id uuid='{11111111-2222-3333-4444-555555555555}' />
     </dashboard>
   </dashboards>
   <windows>

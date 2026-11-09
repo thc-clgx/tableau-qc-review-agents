@@ -1,0 +1,65 @@
+version: "3.0.0"
+metadata:
+  name: Agent Review - usability and naming questions (rows 19-20)
+  standard: "Analytics Tableau Design & Performance Guide, Version 3.0 (29 October 2026)"
+  checklist: "draft Tableau Dashboard Review - [Report Name].xlsx / Agent Review"
+  owner: "Analytics BI QC"
+
+rules:
+  - id: CTL-CONTENT-002
+    title: Dashboard has directions on interactivity
+    description: >
+      Users should not have to guess. Include text or an information icon
+      describing actions and drill-down behaviour. Dropdown filters alone do
+      not count as guidance.
+    category: Usability
+    scope: workbook
+    severity: MEDIUM
+    standard_ref: "Design & Performance Guide v3.0, Usability - Provide Clear Instructions"
+    checklist_ref: "Agent Review!B19"
+    tags: [usability, instructions]
+    assertions:
+      - field: has_interactivity_instructions
+        operator: is_true
+        description: Instructional text describing how to interact with the dashboard
+    evidence_fields:
+      - raw_calculation_text_count
+    on_missing: FAIL
+    message_pass: "Instructional text describing dashboard interactivity is present."
+    message_fail: "No instructional text describing dashboard interactivity was found."
+    recommendation: >
+      Add a short instruction such as "Select a segment of the donut chart to
+      filter the table below", or an information icon carrying usage guidance.
+
+  - id: CTL-CONTENT-003
+    title: Business friendly names used and spelled correctly
+    description: >
+      Titles, labels, tooltips and metric names must read in plain business
+      language and be spelled correctly. Generated calculation identifiers,
+      '(copy)' suffixes and trailing spaces are not business friendly.
+    category: Usability
+    scope: workbook
+    severity: MEDIUM
+    standard_ref: "Design & Performance Guide v3.0, Naming and Labeling"
+    checklist_ref: "Agent Review!B20"
+    tags: [usability, naming, spelling]
+    assertions:
+      - field: misspelled_words
+        operator: is_empty
+        description: Spelling errors in titles, tooltips, labels and names
+      - field: poorly_named_objects
+        operator: is_empty
+        description: Technical or duplicated worksheet and field names
+      - field: raw_calculation_text_count
+        operator: equals
+        value: 0
+        description: Text exposing a generated calculation identifier
+    evidence_fields:
+      - naming_defect_count
+    on_missing: FAIL
+    message_pass: "Names, labels and tooltips use correctly spelled business language."
+    message_fail: "Naming or spelling defects found: {observed}."
+    recommendation: >
+      Correct the spelling in the affected titles, tooltips and field names;
+      rename generated calculations to business terms; and remove '(copy)'
+      suffixes and trailing spaces.

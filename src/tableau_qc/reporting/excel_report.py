@@ -24,7 +24,6 @@ SME_SHEET = "SME Feedback"
 STATUS_FILLS: Dict[str, PatternFill] = {
     Status.PASS.value: PatternFill("solid", fgColor="C6EFCE"),
     Status.FAIL.value: PatternFill("solid", fgColor="FFC7CE"),
-    Status.ADVISORY.value: PatternFill("solid", fgColor="FCE4D6"),
     Status.MANUAL_REVIEW.value: PatternFill("solid", fgColor="FFEB9C"),
     Status.NOT_APPLICABLE.value: PatternFill("solid", fgColor="D9D9D9"),
 }
@@ -51,21 +50,29 @@ class ExcelReportWriter:
 
     # -- public API --------------------------------------------------------
     def write_review(self, report: ReviewReport, path: PathLike) -> Path:
+        """Write the review workbook containing only the agent's own tab."""
         workbook = self._open_workbook()
         self._populate_checklist(workbook, report.checklist)
-        self._write_summary(workbook, self._review_summary_rows(report))
-        self._write_findings(workbook, report.findings)
+        self._keep_only_agent_tabs(workbook, report.checklist)
         return self._save(workbook, path)
 
     def write_verification(self, report: VerificationReport, path: PathLike) -> Path:
         workbook = self._open_workbook()
         self._populate_checklist(workbook, report.checklist)
-        self._write_summary(workbook, self._verification_summary_rows(report))
-        self._write_findings(workbook, report.revised_findings)
-        self._write_verification(workbook, report)
-        if report.sme_feedback:
-            self._write_sme_feedback(workbook, report)
+        self._keep_only_agent_tabs(workbook, report.checklist)
         return self._save(workbook, path)
+
+    @staticmethod
+    def _keep_only_agent_tabs(workbook: XLWorkbook, results: Sequence[ChecklistResult]) -> None:
+        """Remove every sheet the agent did not fill.
+
+        The Peer Review and Tech Review tabs are the human review portions, so
+        the agent's output carries its own tab alone.
+        """
+        answered = {r.sheet for r in results if r.sheet}
+        for name in list(workbook.sheetnames):
+            if name not in answered:
+                del workbook[name]
 
     # -- workbook plumbing -------------------------------------------------
     def _open_workbook(self) -> XLWorkbook:

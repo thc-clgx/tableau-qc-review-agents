@@ -1,14 +1,16 @@
-version: "1.0.0"
+version: "3.0.0"
 name: Tableau Dashboard Review - Agent Review
 template: "draft Tableau Dashboard Review - [Report Name].xlsx"
 standard: "Analytics Tableau Design & Performance Guide, Version 3.0 (29 October 2026)"
 
-# Column layout of the Agent Review tab.
+# The agent fills the Agent Review tab only. The Peer Review and Tech Review
+# tabs are the human review portions and are left untouched.
+#
+# Every question maps to exactly one rule and is answered Y or N. Rows 4, 9 and
+# 21 are section headers in the spreadsheet, not questions, so they are absent.
 answer_column: C
 comment_column: D
 
-# Rows 4, 9 and 21 are section headers in the spreadsheet, not questions, so
-# they are not listed here. Every remaining row is answered by the agent.
 sheets:
   - sheet: Agent Review
     items:
@@ -16,19 +18,13 @@ sheets:
         section: Analytics template questions
         cell: B5
         question: Official logo is in the upper left corner and is visible against background color
-        rules: [CTL-STRUCT-002, CTL-STRUCT-003]
-        residual: >
-          Image content cannot be read from XML. Confirm visually that the
-          logo is the correct asset and legible against the background.
+        rules: [CTL-STRUCT-002]
 
       - id: AR-06
         section: Analytics template questions
         cell: B6
         question: Metadata complete (data update date, dashboard contact, data owner)
         rules: [CTL-CONTENT-001]
-        residual: >
-          Presence of each label is verified; confirm the update date is
-          current and the named contact and owner are correct.
 
       - id: AR-07
         section: Analytics template questions
@@ -54,16 +50,13 @@ sheets:
         question: >-
           Effective color usage with 1-2 dominant colors from Cotality primary palette.
           Can be supplemented by Cotality secondary palette and neutrals. User accessibility considered
-        rules: [CTL-COLOR-002, CTL-COLOR-003]
+        rules: [CTL-COLOR-002]
 
       - id: AR-12
         section: Analytics design questions
         cell: B12
         question: Views are organized by importance (top to bottom, left to right)
         rules: [CTL-STRUCT-004]
-        residual: >
-          Geometry is checked heuristically; whether the ordering matches
-          business importance is a human judgement.
 
       - id: AR-13
         section: Analytics design questions
@@ -94,9 +87,6 @@ sheets:
         cell: B17
         question: Charts have concise, horizontal axis labels for the x-axis
         rules: [CTL-CHART-002]
-        residual: >
-          Label and axis settings are checked; visual truncation and overlap
-          can only be confirmed by looking at the rendered dashboard.
 
       - id: AR-18
         section: Analytics design questions
@@ -108,14 +98,11 @@ sheets:
         cell: B19
         question: Does the dashboard have directions on interactivity (not including dropdown filters)?
         rules: [CTL-CONTENT-002]
-        residual: >
-          Presence of instructional text is verified; whether it adequately
-          explains every action is a human judgement.
 
       - id: AR-20
         cell: B20
         question: Do charts, tables, tooltips and other metrics have business friendly names and are spelled correctly?
-        rules: [CTL-CONTENT-003, CTL-CONTENT-004, CTL-CONTENT-005]
+        rules: [CTL-CONTENT-003]
 
       - id: AR-22
         section: Other efficient workbook best practices
@@ -134,13 +121,9 @@ sheets:
         cell: B24
         question: Avoid filter lists with many unique values
         rules: [CTL-PERF-003]
-        residual: >
-          The filter control type is checked. The number of distinct values
-          lives in the data extract, not the workbook XML, so cardinality must
-          be confirmed in Tableau Desktop.
 
       - id: AR-25
         section: Other efficient workbook best practices
         cell: B25
         question: Close unneeded sheets and hide sheets that are in use
-        rules: [CTL-HYG-001, CTL-HYG-002]
+        rules: [CTL-HYG-001]

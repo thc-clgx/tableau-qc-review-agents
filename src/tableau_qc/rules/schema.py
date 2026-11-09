@@ -33,9 +33,9 @@ RULE_ID_PATTERN = re.compile(r"^[A-Z0-9][A-Z0-9._\-]{2,63}$")
 #: Statuses a rule may fall back to when a value cannot be observed.
 ALLOWED_MISSING_STATUSES = {Status.MANUAL_REVIEW, Status.NOT_APPLICABLE, Status.FAIL}
 
-#: Statuses a rule may report when its assertions do not hold. ADVISORY marks a
-#: heuristic or opinion-based check that must never be read as hard evidence.
-ALLOWED_VIOLATION_STATUSES = {Status.FAIL, Status.ADVISORY}
+#: Statuses a rule may report when its assertions do not hold. Every Agent
+#: Review question must resolve to a binary answer, so FAIL is the only option.
+ALLOWED_VIOLATION_STATUSES = {Status.FAIL}
 
 REQUIRED_RULE_KEYS = ("id", "title", "scope", "assertions")
 ALLOWED_RULE_KEYS = {

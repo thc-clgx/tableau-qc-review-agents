@@ -382,6 +382,18 @@ class Dashboard:
         return any(i.is_upper_left for i in self.images)
 
     @property
+    def placeholder_image_names(self) -> List[str]:
+        """Image assets still carrying a placeholder file name."""
+        from ..standards import standards
+
+        pattern = standards().placeholder_image_regex
+        return [i.file_name for i in self.images if i.file_name and pattern.search(i.file_name)]
+
+    @property
+    def placeholder_image_count(self) -> int:
+        return len(self.placeholder_image_names)
+
+    @property
     def text_content(self) -> str:
         return " ".join(t.text for t in self.texts)
 
@@ -990,6 +1002,20 @@ class Workbook:
         return len([w for w in self.worksheets if not w.is_used])
 
     @property
+    def visible_used_worksheets(self) -> List[str]:
+        """Worksheets placed on a dashboard but left visible in the workbook."""
+        return [w.name for w in self.worksheets if w.is_used and w.is_visible is not False]
+
+    @property
+    def visible_used_worksheet_count(self) -> int:
+        return len(self.visible_used_worksheets)
+
+    @property
+    def sheet_hygiene_defect_count(self) -> int:
+        """Unused sheets that should be deleted plus used sheets left visible."""
+        return self.unused_worksheet_count + self.visible_used_worksheet_count
+
+    @property
     def calculated_fields(self) -> List[CalculatedField]:
         out: List[CalculatedField] = []
         for ds in self.datasources:
@@ -1061,6 +1087,28 @@ class Workbook:
     @property
     def red_green_conflict_count(self) -> int:
         return len(self.worksheets_combining_red_and_green)
+
+    @property
+    def placeholder_image_count(self) -> int:
+        return sum(d.placeholder_image_count for d in self.dashboards)
+
+    @property
+    def dashboards_without_upper_left_logo(self) -> List[str]:
+        return [d.name for d in self.dashboards if not d.has_upper_left_image]
+
+    @property
+    def logo_defect_count(self) -> int:
+        """Dashboards missing a top-left logo plus placeholder image assets."""
+        return len(self.dashboards_without_upper_left_logo) + self.placeholder_image_count
+
+    @property
+    def naming_defect_count(self) -> int:
+        """Spelling errors, technical names and raw ids exposed to the user."""
+        return (
+            self.misspelled_word_count
+            + self.poorly_named_object_count
+            + self.raw_calculation_text_count
+        )
 
     # -- text / naming -----------------------------------------------------
     @property

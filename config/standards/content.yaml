@@ -46,6 +46,8 @@ interactivity_phrases:
 logo:
   upper_left_max_x: 12500
   upper_left_max_y: 12500
+  # Asset names that indicate a temporary or unverified image.
+  placeholder_name_pattern: "(?i)^(untitled|image|new|copy|screenshot)"
 
 # --------------------------------------------------------------------------
 # Business-friendly naming (Guide, Naming and Labeling).

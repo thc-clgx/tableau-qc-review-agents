@@ -8,49 +8,30 @@ from conftest import parse_fixture
 from tableau_qc.domain.findings import Status, aggregate_status
 from tableau_qc.rules.engine import RuleEngine
 
+#: The 19 rules, one per Agent Review question.
 RULE_IDS = [
-    "CTL-LAYOUT-001",
-    "CTL-LAYOUT-002",
-    "CTL-LAYOUT-003",
-    "CTL-LAYOUT-004",
-    "CTL-TYPO-001",
-    "CTL-TYPO-002",
-    "CTL-COLOR-001",
-    "CTL-COLOR-002",
-    "CTL-COLOR-003",
-    "CTL-PERF-001",
-    "CTL-PERF-002",
-    "CTL-PERF-003",
-    "CTL-PERF-004",
-    "CTL-HYG-001",
-    "CTL-HYG-002",
-    "CTL-STRUCT-001",
     "CTL-STRUCT-002",
-    "CTL-STRUCT-003",
-    "CTL-STRUCT-004",
     "CTL-CONTENT-001",
+    "CTL-TYPO-001",
+    "CTL-COLOR-001",
+    "CTL-LAYOUT-003",
+    "CTL-COLOR-002",
+    "CTL-STRUCT-004",
+    "CTL-LAYOUT-004",
+    "CTL-TYPO-002",
+    "CTL-TYPO-003",
+    "CTL-CHART-001",
+    "CTL-CHART-002",
+    "CTL-STRUCT-001",
     "CTL-CONTENT-002",
     "CTL-CONTENT-003",
-    "CTL-CONTENT-004",
-    "CTL-CHART-001",
-    "CTL-CHART-002",
-    "CTL-CONTENT-005",
-    "CTL-TYPO-003",
+    "CTL-PERF-004",
+    "CTL-PERF-002",
+    "CTL-PERF-003",
+    "CTL-HYG-001",
 ]
 
-#: Rules whose violation is a heuristic or opinion rather than hard evidence.
-ADVISORY_RULE_IDS = {
-    "CTL-COLOR-003",
-    "CTL-PERF-003",
-    "CTL-STRUCT-003",
-    "CTL-STRUCT-004",
-    "CTL-CONTENT-002",
-    "CTL-CONTENT-004",
-    "CTL-CONTENT-005",
-    "CTL-CHART-001",
-    "CTL-CHART-002",
-    "CTL-TYPO-003",
-}
+
 
 
 def _status_for(repository, rule_id, path) -> Status:
@@ -65,15 +46,14 @@ def _status_for(repository, rule_id, path) -> Status:
 def test_passing_fixture_passes(rule_id, repository, rule_fixtures_dir):
     path = rule_fixtures_dir / f"{rule_id}_pass.xml"
     assert path.is_file(), f"missing passing fixture for {rule_id}"
-    assert _status_for(repository, rule_id, path) is Status.PASS
+    assert _status_for(repository, rule_id, path) in (Status.PASS, Status.NOT_APPLICABLE)
 
 
 @pytest.mark.parametrize("rule_id", RULE_IDS)
 def test_failing_fixture_fails(rule_id, repository, rule_fixtures_dir):
     path = rule_fixtures_dir / f"{rule_id}_fail.xml"
     assert path.is_file(), f"missing failing fixture for {rule_id}"
-    expected = Status.ADVISORY if rule_id in ADVISORY_RULE_IDS else Status.FAIL
-    assert _status_for(repository, rule_id, path) is expected
+    assert _status_for(repository, rule_id, path) is Status.FAIL
 
 
 def test_every_rule_has_both_fixtures(repository, rule_fixtures_dir):
@@ -84,20 +64,31 @@ def test_every_rule_has_both_fixtures(repository, rule_fixtures_dir):
             assert path.is_file(), f"{rule.id} is missing its {kind} fixture"
 
 
-def test_advisory_rules_never_report_fail(repository, rule_fixtures_dir):
-    """Heuristic rules must stay ADVISORY so they are not read as evidence."""
-    for rule_id in sorted(ADVISORY_RULE_IDS):
-        rule = repository.by_id(rule_id)
-        if rule is None:
-            continue
-        assert rule.on_violation is Status.ADVISORY, f"{rule_id} should be advisory"
+def test_every_rule_is_binary(repository):
+    """Every Agent Review rule must resolve to a Y or N answer."""
+    for rule in repository:
+        assert rule.on_violation is Status.FAIL, f"{rule.id} must report FAIL, not advisory"
+        assert rule.on_missing in (Status.FAIL, Status.NOT_APPLICABLE), (
+            f"{rule.id} must not fall back to MANUAL_REVIEW"
+        )
+
+
+def test_exactly_nineteen_rules(repository):
+    assert len(repository) == 19
+    assert sorted(repository.rule_ids) == sorted(RULE_IDS)
+
+
+def test_one_rule_per_question(checklist_definition):
+    assert len(checklist_definition.items) == 19
+    for item in checklist_definition.items:
+        assert len(item.rule_ids) == 1, f"{item.item_id} must map to exactly one rule"
 
 
 @pytest.mark.parametrize("rule_id", RULE_IDS)
 def test_failing_fixture_produces_actionable_evidence(rule_id, repository, rule_fixtures_dir):
     workbook = parse_fixture(rule_fixtures_dir / f"{rule_id}_fail.xml")
     findings = RuleEngine(repository.filtered(rule_ids=[rule_id])).execute(workbook)
-    failed = [f for f in findings if f.status in (Status.FAIL, Status.ADVISORY)]
+    failed = [f for f in findings if f.status is Status.FAIL]
     assert failed
     for finding in failed:
         assertion_evidence = [e for e in finding.evidence if e.note != "context"]
@@ -120,9 +111,7 @@ def test_unmapped_rules_are_known_and_intentional(repository, checklist_definiti
     from tableau_qc.rules.validation import unmapped_rule_ids
 
     mapped = {rid for item in checklist_definition.items for rid in item.rule_ids}
-    # The redesigned checklist has no dashboard-size question, so the two size
-    # rules are enforced via QC Findings only.
-    assert unmapped_rule_ids(repository, mapped) == ["CTL-LAYOUT-001", "CTL-LAYOUT-002"]
+    assert unmapped_rule_ids(repository, mapped) == []
 
 
 def test_checklist_never_references_an_unknown_rule(repository, checklist_definition):
@@ -133,9 +122,10 @@ def test_checklist_never_references_an_unknown_rule(repository, checklist_defini
             )
 
 
-def test_padding_manual_fixture_is_manual_review(repository, rule_fixtures_dir):
+def test_undeclared_padding_fails_closed(repository, rule_fixtures_dir):
+    """An undeclared value is not evidence of compliance, so it answers N."""
     status = _status_for(repository, "CTL-LAYOUT-004", rule_fixtures_dir / "CTL-LAYOUT-004_manual.xml")
-    assert status is Status.MANUAL_REVIEW
+    assert status is Status.FAIL
 
 
 def test_padding_partial_fixture_fails_on_inner_padding_only(repository, rule_fixtures_dir):
@@ -150,9 +140,10 @@ def test_padding_partial_fixture_fails_on_inner_padding_only(repository, rule_fi
     assert failed_fields == {"inner_padding.minimum"}
 
 
-def test_font_manual_fixture_is_manual_review(repository, rule_fixtures_dir):
+def test_undeclared_font_fails_closed(repository, rule_fixtures_dir):
+    """Tableau's inherited default is not Arial, so an absent font answers N."""
     status = _status_for(repository, "CTL-TYPO-001", rule_fixtures_dir / "CTL-TYPO-001_manual.xml")
-    assert status is Status.MANUAL_REVIEW
+    assert status is Status.FAIL
 
 
 def test_sample_workbook_reproduces_known_defects(repository, sample_xml_path):
@@ -162,9 +153,6 @@ def test_sample_workbook_reproduces_known_defects(repository, sample_xml_path):
     for finding in findings:
         by_rule.setdefault(finding.rule_id, []).append(finding.status)
 
-    assert aggregate_status(by_rule["CTL-LAYOUT-001"]) is Status.FAIL  # 1000 px wide
-    assert aggregate_status(by_rule["CTL-LAYOUT-002"]) is Status.FAIL  # 800 px high
     assert aggregate_status(by_rule["CTL-LAYOUT-003"]) is Status.FAIL  # 9 views
     assert aggregate_status(by_rule["CTL-LAYOUT-004"]) is Status.FAIL  # 4 px padding
-    # <run fontname='Tableau Medium'> is now harvested, so this is evidenced.
     assert aggregate_status(by_rule["CTL-TYPO-001"]) is Status.FAIL  # Tableau Medium

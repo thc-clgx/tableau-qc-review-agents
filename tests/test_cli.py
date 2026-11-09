@@ -13,7 +13,7 @@ def test_rules_command_lists_rules(capsys, rules_dir):
     assert main(["rules", "--rules", str(rules_dir)]) == 0
     out = capsys.readouterr().out
     assert "rules from" in out
-    assert "CTL-LAYOUT-001" in out
+    assert "CTL-LAYOUT-003" in out
 
 
 def test_pre_review_returns_nonzero_on_failure(capsys, tmp_path, sample_xml_path, rules_dir, checklist_path):
@@ -82,9 +82,9 @@ def test_post_review_reports_resolution(capsys, tmp_path, rule_fixtures_dir, rul
     code = main(
         [
             "post-review",
-            str(rule_fixtures_dir / "CTL-LAYOUT-001_pass.xml"),
+            str(rule_fixtures_dir / "CTL-LAYOUT-003_pass.xml"),
             "--baseline-xml",
-            str(rule_fixtures_dir / "CTL-LAYOUT-001_fail.xml"),
+            str(rule_fixtures_dir / "CTL-LAYOUT-003_fail.xml"),
             "--rules",
             str(rules_dir),
             "--checklist",
@@ -93,7 +93,7 @@ def test_post_review_reports_resolution(capsys, tmp_path, rule_fixtures_dir, rul
             str(tmp_path),
             "--no-excel",
             "--rule-id",
-            "CTL-LAYOUT-001",
+            "CTL-LAYOUT-003",
         ]
     )
     out = capsys.readouterr().out
@@ -106,7 +106,7 @@ def test_post_review_requires_baseline(capsys, tmp_path, rule_fixtures_dir, rule
     code = main(
         [
             "post-review",
-            str(rule_fixtures_dir / "CTL-LAYOUT-001_pass.xml"),
+            str(rule_fixtures_dir / "CTL-LAYOUT-003_pass.xml"),
             "--rules",
             str(rules_dir),
             "--output-dir",

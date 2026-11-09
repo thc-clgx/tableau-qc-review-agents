@@ -1,0 +1,118 @@
+version: "3.0.0"
+metadata:
+  name: Agent Review - efficient workbook best practices (rows 22-25)
+  standard: "Analytics Tableau Design & Performance Guide, Version 3.0 (29 October 2026)"
+  checklist: "draft Tableau Dashboard Review - [Report Name].xlsx / Agent Review"
+  owner: "Analytics BI QC"
+
+rules:
+  - id: CTL-PERF-004
+    title: Limit custom SQL in live connections
+    description: >
+      Custom SQL significantly reduces performance on live connections. Native
+      relationships or joins should be used instead.
+    category: Performance
+    scope: workbook
+    severity: HIGH
+    standard_ref: "Design & Performance Guide v3.0, Performance - Avoid Custom SQL"
+    checklist_ref: "Agent Review!B22"
+    tags: [performance, sql]
+    assertions:
+      - field: live_custom_sql_datasources
+        operator: is_empty
+        description: No live (non-extracted) datasource may use custom SQL
+    evidence_fields:
+      - uses_custom_sql
+    on_missing: FAIL
+    message_pass: "No live connection uses custom SQL."
+    message_fail: "These live datasources use custom SQL: {observed}."
+    recommendation: >
+      Replace custom SQL with Tableau relationships or joins, or move the logic
+      into a curated database view. If custom SQL must remain, extract the
+      datasource.
+
+  - id: CTL-PERF-002
+    title: Show Apply Button used for multi-select filters
+    description: >
+      Enabling the Apply button on multi-select filters prevents a query being
+      issued on every checkbox click.
+    category: Performance
+    scope: multi_select_filter_zone
+    severity: MEDIUM
+    standard_ref: "Design & Performance Guide v3.0, Performance - Optimize Filters"
+    checklist_ref: "Agent Review!B23"
+    tags: [performance, filters]
+    assertions:
+      - field: show_apply
+        operator: is_true
+        description: show-apply must be enabled on multi-select filter controls
+    evidence_fields:
+      - filter_mode
+      - dashboard_name
+    on_missing: FAIL
+    message_pass: "Multi-select filter '{target_name}' shows the Apply button."
+    message_fail: "Multi-select filter '{target_name}' does not show the Apply button."
+    recommendation: >
+      Select the filter control, open Customize and enable Show Apply Button.
+
+  - id: CTL-PERF-003
+    title: Avoid filter lists with many unique values
+    description: >
+      Fully enumerated list controls bound to the whole database domain render
+      every value. The guide asks for wildcard match or a search box instead.
+    category: Performance
+    scope: dashboard_filter_zone
+    severity: MEDIUM
+    standard_ref: "Design & Performance Guide v3.0, Performance - Optimize Filters"
+    checklist_ref: "Agent Review!B24"
+    tags: [performance, filters]
+    applies_when:
+      - field: filter_values_source
+        operator: equals
+        value: database
+        description: Only filters bound to the full database domain are assessed
+    assertions:
+      - field: filter_mode
+        operator: not_in
+        value: [checklist, multivalue-list]
+        description: Fully enumerated list controls are the costly ones
+    evidence_fields:
+      - filter_mode
+      - dashboard_name
+    on_missing: FAIL
+    message_pass: "Filter '{target_name}' does not use a fully enumerated list control."
+    message_fail: "Filter '{target_name}' uses an enumerated list bound to the full database domain."
+    recommendation: >
+      Switch high-cardinality filters to Wildcard Match or a Custom List search
+      control.
+
+  - id: CTL-HYG-001
+    title: Unneeded sheets closed and sheets in use hidden
+    description: >
+      Worksheets not used by any dashboard should be deleted, and worksheets
+      that are in use should be hidden so the published workbook shows only
+      dashboards.
+    category: Performance
+    scope: workbook
+    severity: MEDIUM
+    standard_ref: "Design & Performance Guide v3.0, Dashboard Best Practices - Hide Unused Sheets"
+    checklist_ref: "Agent Review!B25"
+    tags: [performance, hygiene]
+    assertions:
+      - field: unused_worksheet_count
+        operator: equals
+        value: 0
+        description: Worksheets not placed on any dashboard should be deleted
+      - field: visible_used_worksheet_count
+        operator: equals
+        value: 0
+        description: Worksheets used by a dashboard should be hidden
+    evidence_fields:
+      - worksheet_count
+      - sheet_hygiene_defect_count
+    on_missing: FAIL
+    message_pass: "Every worksheet is used by a dashboard and hidden."
+    message_fail: "Sheet hygiene defects found: {observed}."
+    recommendation: >
+      Delete worksheets that are not used in any dashboard, and hide the
+      worksheets that are in use.

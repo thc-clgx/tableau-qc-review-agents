@@ -18,7 +18,7 @@ from tableau_qc.settings import excel_template_or_none
 @pytest.fixture(scope="module")
 def review_report(request):
     rules = request.config.rootpath / "config" / "rules"
-    checklist = request.config.rootpath / "config" / "checklist" / "tech_review.yaml"
+    checklist = request.config.rootpath / "config" / "checklist"
     sample = request.config.rootpath / "tests" / "fixtures" / "sample_workbook.xml"
     agent = PreTechnicalReviewAgent(rules_path=rules, checklist_path=checklist)
     return agent.run(sample)
@@ -30,7 +30,7 @@ def test_json_report_structure(review_report, tmp_path):
     assert data["report_type"] == "PRE_TECHNICAL_REVIEW"
     assert data["schema_version"] == "1.0"
     assert data["workbook"]["source_sha256"]
-    assert data["rule_repository"]["rule_count"] >= 20
+    assert data["rule_repository"]["rule_count"] == 19
     assert data["summary"]["overall_status"] == Status.FAIL.value
     assert data["findings"] and data["checklist"]
 
@@ -54,15 +54,11 @@ def test_load_json_report_missing(tmp_path):
         load_json_report(tmp_path / "absent.json")
 
 
-def test_excel_report_without_template(review_report, tmp_path):
+def test_excel_report_contains_only_the_agent_tab(review_report, tmp_path):
+    """The agent fills its own tab; Peer and Tech Review stay human-owned."""
     path = ExcelReportWriter(None).write_review(review_report, tmp_path / "report.xlsx")
     workbook = openpyxl.load_workbook(path)
-    assert "QC Summary" in workbook.sheetnames
-    assert "QC Findings" in workbook.sheetnames
-    assert "Tech Review" in workbook.sheetnames
-    sheet = workbook["Tech Review"]
-    assert sheet.cell(row=1, column=1).value == "Item"
-    assert sheet.max_row == len(review_report.checklist) + 1
+    assert workbook.sheetnames == ["Agent Review"]
 
 
 def test_excel_report_populates_template(review_report, tmp_path):
@@ -70,22 +66,39 @@ def test_excel_report_populates_template(review_report, tmp_path):
     if template is None:
         pytest.skip("review template not available")
     path = ExcelReportWriter(template).write_review(review_report, tmp_path / "filled.xlsx")
-    sheet = openpyxl.load_workbook(path)["Tech Review"]
+    workbook = openpyxl.load_workbook(path)
 
+    assert workbook.sheetnames == ["Agent Review"]
+    sheet = workbook["Agent Review"]
     assert sheet.cell(row=3, column=2).value == "Question"  # template preserved
-    assert sheet.cell(row=11, column=3).value == "N"  # no more than 6 views -> fail
-    assert "at most 6 views" in sheet.cell(row=11, column=4).value
-    assert sheet.cell(row=8, column=3).value == "N"  # Tableau Medium, not Arial
+    assert sheet.cell(row=10, column=3).value == "N"  # more than 6 views
+    assert "at most 6 views" in sheet.cell(row=10, column=4).value
 
 
-def test_excel_findings_sheet_lists_evidence(review_report, tmp_path):
-    path = ExcelReportWriter(None).write_review(review_report, tmp_path / "report.xlsx")
-    sheet = openpyxl.load_workbook(path)["QC Findings"]
-    headers = [c.value for c in sheet[1]]
-    assert "Rule ID" in headers and "Status" in headers
-    assert sheet.max_row == len(review_report.findings) + 1
-    evidence_column = headers.index("Evidence (field / expected / observed / XPath)") + 1
-    assert "/workbook" in sheet.cell(row=2, column=evidence_column).value
+def test_every_answered_cell_is_binary(review_report, tmp_path):
+    template = excel_template_or_none()
+    if template is None:
+        pytest.skip("review template not available")
+    path = ExcelReportWriter(template).write_review(review_report, tmp_path / "binary.xlsx")
+    sheet = openpyxl.load_workbook(path)["Agent Review"]
+    answers = {
+        sheet.cell(row=r, column=3).value
+        for r in range(4, 26)
+        if sheet.cell(row=r, column=3).value is not None
+    }
+    assert answers <= {"Y", "N"}, f"non-binary answers found: {answers}"
+
+
+def test_recommendations_are_written_for_failures(review_report, tmp_path):
+    template = excel_template_or_none()
+    if template is None:
+        pytest.skip("review template not available")
+    path = ExcelReportWriter(template).write_review(review_report, tmp_path / "report.xlsx")
+    sheet = openpyxl.load_workbook(path)["Agent Review"]
+    for result in review_report.checklist:
+        row = int("".join(c for c in result.cell if c.isdigit()))
+        if sheet.cell(row=row, column=3).value == "N":
+            assert sheet.cell(row=row, column=4).value, f"{result.item_id} needs advice"
 
 
 def test_pdf_report_is_written(review_report, tmp_path):
@@ -102,24 +115,28 @@ def test_write_excel_report_dispatch(review_report, tmp_path):
 
 # -- PDF column contract ---------------------------------------------------
 def test_verification_label_vocabulary():
-    """PDFs use one standard column with exactly four reportable values."""
+    """The PDF uses one binary column: Y or N."""
     from tableau_qc.reporting.pdf_report import VERIFICATION_COLOURS, verification_label
 
-    assert verification_label(Status.PASS) == "PASS"
-    assert verification_label(Status.FAIL) == "FAIL"
-    assert verification_label(Status.ADVISORY) == "ADVISORY"
-    assert verification_label(Status.MANUAL_REVIEW) == "MANUAL"
-    assert verification_label(Status.NOT_APPLICABLE) == "N/A"
+    assert verification_label(Status.PASS) == "Y"
+    assert verification_label(Status.NOT_APPLICABLE) == "Y"
+    assert verification_label(Status.FAIL) == "N"
+    assert verification_label(Status.MANUAL_REVIEW) == "N"
     # A missing status is never silently treated as a pass.
-    assert verification_label(None) == "MANUAL"
-    assert set(VERIFICATION_COLOURS) == {"PASS", "FAIL", "ADVISORY", "MANUAL", "N/A"}
+    assert verification_label(None) == "N"
+    assert set(VERIFICATION_COLOURS) == {"Y", "N"}
 
 
-def test_pdf_has_no_before_after_columns(review_report, tmp_path):
+def test_pdf_contains_only_the_checklist(review_report, tmp_path):
+    """The PDF carries the Agent Review checklist and nothing else."""
     from pypdf import PdfReader
 
     path = write_pdf_report(review_report, tmp_path / "columns.pdf")
     text = " ".join(page.extract_text() or "" for page in PdfReader(str(path)).pages)
-    assert "Verification" in text
-    assert "Evidence before" not in text
-    assert "Evidence after" not in text
+
+    assert "Agent Review" in text
+    assert "Pass (Y/N)" in text
+    assert "Recommended Changes" in text
+    # No findings dump, no before/after evidence, no other checklist tab.
+    for unwanted in ("Evidence before", "Evidence after", "QC Findings", "Tech Review"):
+        assert unwanted not in text, f"PDF still carries '{unwanted}'"

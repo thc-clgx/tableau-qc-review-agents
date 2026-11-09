@@ -27,24 +27,24 @@ def _verification(comparisons, rule_id):
 
 def test_resolved_when_defect_is_fixed(agent, rule_fixtures_dir):
     report = agent.run(
-        rule_fixtures_dir / "CTL-LAYOUT-001_pass.xml",
-        baseline_xml=rule_fixtures_dir / "CTL-LAYOUT-001_fail.xml",
+        rule_fixtures_dir / "CTL-LAYOUT-003_pass.xml",
+        baseline_xml=rule_fixtures_dir / "CTL-LAYOUT-003_fail.xml",
     )
-    assert _verification(report.comparisons, "CTL-LAYOUT-001") == {VerificationStatus.RESOLVED}
-    resolved = next(c for c in report.comparisons if c.rule_id == "CTL-LAYOUT-001")
+    assert _verification(report.comparisons, "CTL-LAYOUT-003") == {VerificationStatus.RESOLVED}
+    resolved = next(c for c in report.comparisons if c.rule_id == "CTL-LAYOUT-003")
     assert resolved.baseline_status is Status.FAIL
     assert resolved.revised_status is Status.PASS
     assert resolved.baseline_evidence and resolved.revised_evidence
-    assert resolved.baseline_evidence[0]["observed"] == 1200
-    assert resolved.revised_evidence[0]["observed"] == 1600
+    assert resolved.baseline_evidence[0]["observed"] == 7   # over the limit
+    assert resolved.revised_evidence[0]["observed"] == 3    # within the limit
 
 
 def test_unresolved_when_defect_remains(agent, rule_fixtures_dir):
     report = agent.run(
-        rule_fixtures_dir / "CTL-LAYOUT-001_fail.xml",
-        baseline_xml=rule_fixtures_dir / "CTL-LAYOUT-001_fail.xml",
+        rule_fixtures_dir / "CTL-LAYOUT-003_fail.xml",
+        baseline_xml=rule_fixtures_dir / "CTL-LAYOUT-003_fail.xml",
     )
-    assert _verification(report.comparisons, "CTL-LAYOUT-001") == {VerificationStatus.UNRESOLVED}
+    assert _verification(report.comparisons, "CTL-LAYOUT-003") == {VerificationStatus.UNRESOLVED}
     assert report.summary["sign_off_ready"] is False
 
 
@@ -59,13 +59,18 @@ def test_partially_resolved_when_one_assertion_is_fixed(agent, rule_fixtures_dir
     assert "inner_padding.minimum" in comparison.note
 
 
-def test_cannot_verify_when_value_no_longer_declared(agent, rule_fixtures_dir):
+def test_cannot_verify_when_the_object_is_removed(agent, rule_fixtures_dir):
+    """A zone deleted during remediation cannot be verified as fixed."""
     report = agent.run(
-        rule_fixtures_dir / "CTL-LAYOUT-004_manual.xml",
-        baseline_xml=rule_fixtures_dir / "CTL-LAYOUT-004_fail.xml",
+        rule_fixtures_dir / "CTL-LAYOUT-004_fail.xml",
+        baseline_xml=rule_fixtures_dir / "CTL-LAYOUT-004_added_zone.xml",
     )
-    comparison = next(c for c in report.comparisons if c.rule_id == "CTL-LAYOUT-004")
-    assert comparison.verification is VerificationStatus.CANNOT_VERIFY
+    removed = [
+        c
+        for c in report.comparisons
+        if c.verification is VerificationStatus.CANNOT_VERIFY and "no longer exists" in c.note
+    ]
+    assert removed
 
 
 def test_new_regression_detected(agent, rule_fixtures_dir):
@@ -122,13 +127,13 @@ def test_unchanged_pass_is_reported(rules_dir, checklist_path, rule_fixtures_dir
     agent = PostTechnicalReviewAgent(
         rules_path=rules_dir,
         checklist_path=checklist_path,
-        rule_ids=["CTL-LAYOUT-001", "CTL-LAYOUT-002"],
+        rule_ids=["CTL-LAYOUT-003", "CTL-TYPO-001"],
     )
     report = agent.run(
-        rule_fixtures_dir / "CTL-LAYOUT-001_pass.xml",
-        baseline_xml=rule_fixtures_dir / "CTL-LAYOUT-001_pass.xml",
+        rule_fixtures_dir / "CTL-LAYOUT-003_pass.xml",
+        baseline_xml=rule_fixtures_dir / "CTL-LAYOUT-003_pass.xml",
     )
-    assert _verification(report.comparisons, "CTL-LAYOUT-002") == {
+    assert _verification(report.comparisons, "CTL-TYPO-001") == {
         VerificationStatus.UNCHANGED_PASS
     }
     assert report.summary["sign_off_ready"] is True
@@ -138,20 +143,20 @@ def test_previous_audit_json_is_accepted(
     agent, rules_dir, checklist_path, rule_fixtures_dir, tmp_path
 ):
     pre_agent = PreTechnicalReviewAgent(rules_path=rules_dir, checklist_path=checklist_path)
-    baseline_report = pre_agent.run(rule_fixtures_dir / "CTL-LAYOUT-001_fail.xml")
+    baseline_report = pre_agent.run(rule_fixtures_dir / "CTL-LAYOUT-003_fail.xml")
     audit_path = write_json_report(baseline_report, tmp_path / "audit.json")
 
     report = agent.run(
-        rule_fixtures_dir / "CTL-LAYOUT-001_pass.xml", previous_audit_json=audit_path
+        rule_fixtures_dir / "CTL-LAYOUT-003_pass.xml", previous_audit_json=audit_path
     )
     assert report.baseline["source"] == "previous_audit_json"
     assert report.baseline["finding_count"] == len(baseline_report.findings)
-    assert _verification(report.comparisons, "CTL-LAYOUT-001") == {VerificationStatus.RESOLVED}
+    assert _verification(report.comparisons, "CTL-LAYOUT-003") == {VerificationStatus.RESOLVED}
 
 
 def test_requires_a_baseline(agent, rule_fixtures_dir):
     with pytest.raises(VerificationInputError):
-        agent.run(rule_fixtures_dir / "CTL-LAYOUT-001_pass.xml")
+        agent.run(rule_fixtures_dir / "CTL-LAYOUT-003_pass.xml")
 
 
 def test_sme_feedback_is_included(agent, rule_fixtures_dir, fixtures_dir):
@@ -188,13 +193,14 @@ def test_checklist_reflects_revised_workbook(agent, rule_fixtures_dir):
         baseline_xml=rule_fixtures_dir / "CTL-LAYOUT-003_fail.xml",
     )
     answers = {r.item_id: r.pass_flag for r in report.checklist}
-    assert answers["TR-11"] == "Y"
+    assert answers["AR-10"] == "Y"
+    assert set(answers.values()) <= {"Y", "N"}
 
 
 def test_run_and_export_writes_reports(agent, rule_fixtures_dir, tmp_path):
     report, artifacts = agent.run_and_export(
-        rule_fixtures_dir / "CTL-LAYOUT-001_pass.xml",
-        baseline_xml=rule_fixtures_dir / "CTL-LAYOUT-001_fail.xml",
+        rule_fixtures_dir / "CTL-LAYOUT-003_pass.xml",
+        baseline_xml=rule_fixtures_dir / "CTL-LAYOUT-003_fail.xml",
         output_dir=tmp_path,
         basename="verification",
         write_pdf=True,
@@ -203,15 +209,20 @@ def test_run_and_export_writes_reports(agent, rule_fixtures_dir, tmp_path):
     assert artifacts.pdf_path.read_bytes().startswith(b"%PDF")
 
     workbook = openpyxl.load_workbook(artifacts.excel_path)
-    assert "QC Verification" in workbook.sheetnames
-    sheet = workbook["QC Verification"]
-    assert sheet.max_row == len(report.comparisons) + 1
+    assert workbook.sheetnames == ["Agent Review"]
+    sheet = workbook["Agent Review"]
+    answers = {
+        sheet.cell(row=r, column=3).value
+        for r in range(4, 26)
+        if sheet.cell(row=r, column=3).value is not None
+    }
+    assert answers <= {"Y", "N"}
 
 
 def test_verification_is_deterministic(agent, rule_fixtures_dir):
-    kwargs = {"baseline_xml": rule_fixtures_dir / "CTL-LAYOUT-001_fail.xml"}
-    first = agent.run(rule_fixtures_dir / "CTL-LAYOUT-001_pass.xml", **kwargs)
-    second = agent.run(rule_fixtures_dir / "CTL-LAYOUT-001_pass.xml", **kwargs)
+    kwargs = {"baseline_xml": rule_fixtures_dir / "CTL-LAYOUT-003_fail.xml"}
+    first = agent.run(rule_fixtures_dir / "CTL-LAYOUT-003_pass.xml", **kwargs)
+    second = agent.run(rule_fixtures_dir / "CTL-LAYOUT-003_pass.xml", **kwargs)
     assert [(c.key, c.verification) for c in first.comparisons] == [
         (c.key, c.verification) for c in second.comparisons
     ]
@@ -234,8 +245,6 @@ def test_realistic_revision_of_the_sample_workbook(agent, fixtures_dir, sample_x
     for comparison in report.comparisons:
         by_rule.setdefault(comparison.rule_id, set()).add(comparison.verification)
 
-    assert by_rule["CTL-LAYOUT-001"] == {VerificationStatus.RESOLVED}
-    assert by_rule["CTL-LAYOUT-002"] == {VerificationStatus.RESOLVED}
     assert by_rule["CTL-LAYOUT-003"] == {VerificationStatus.UNRESOLVED}
     # The revision added workbook-level Arial but left 'Tableau Medium' in the
     # title <run> elements, so the font rule correctly still reports a defect.

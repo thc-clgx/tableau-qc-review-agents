@@ -1,6 +1,6 @@
 # Tableau XML Dashboard Review Agent — User Guide
 
-**Version 1.1 · 7 November 2026**
+**Version 2.0 · 9 November 2026**
 Automated QC review of Tableau workbooks against the Cotality *Analytics Tableau Design &
 Performance Guide v3.0* and the *Tableau Dashboard Review* checklist.
 
@@ -21,10 +21,9 @@ There are two agents that share one parser and one rule engine:
 | **Question it answers** | "Does this meet our standards?" | "Were the cited issues actually fixed, and did the fix break anything?" |
 | **Output** | Filled checklist + findings (JSON / Excel / PDF) | Resolution status per issue + regression check |
 
-**Current coverage:** 19 of 19 questions on the *Agent Review* tab are answered
-automatically — zero left blank for a human. On the broader *Tech Review* tab, 21 of 24
-are automated and 3 remain manual because the information genuinely does not exist in a
-workbook file.
+**Scope:** the agent fills the **Agent Review** tab only — 19 questions answered by 19
+rules, one rule per question, every answer **Y or N**. The Peer Review and Tech Review
+tabs are the human review portions and are left untouched by the agent.
 
 > **The input is always XML.** The framework does not open `.twb`/`.twbx` archives,
 > connect to Tableau Server or Cloud, or convert workbooks. Export the XML first.
@@ -171,18 +170,18 @@ With an explicit output name and folder:
 
 ### 4.5 Reading the result — the four verdicts
 
-| Verdict | Excel | Meaning |
-|---|---|---|
-| **PASS** | `Y` | Verified from the XML, with evidence |
-| **FAIL** | `N` | Violation proven, with evidence |
-| **ADVISORY** | `Review` | A heuristic or opinion (e.g. naming quality). **Never counts as a pass** — a human decides |
-| **MANUAL** | `Manual` | The agent abstained because the information is not in the XML |
+| Answer | Meaning |
+|---|---|
+| **Y** | The standard is met, evidenced from the workbook XML |
+| **N** | The standard is not met — the Recommended Changes column says what to fix |
 
-The design principle: **a confidently wrong `Y` is worse than an honest "I don't know."**
-The agent never guesses. Where a check is only partly automatable, the comment column
-states the **residual manual check** — for example the logo rule verifies the image sits
-at the top-left and that the filename is not a placeholder, then tells the reviewer the
-image content still needs visual confirmation.
+Rules **fail closed**. When a required value is not declared in the workbook, compliance
+has not been demonstrated, so the answer is `N` and the comment explains what to verify.
+For example, a workbook that declares no font inherits Tableau's default, which is not
+Arial — so the font question answers `N`, not "unknown".
+
+A rule with nothing to assess cannot be violated and answers `Y`. For instance, a colour
+rule on a workbook with no colour encodings reports `Y`.
 
 ---
 
@@ -460,7 +459,7 @@ python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 # Validate the rule repository against the checklist (CI-friendly)
 .venv/bin/tableau-qc rules --strict
 
-# Run the test suite (458 tests)
+# Run the test suite (439 tests)
 .venv/bin/python -m pytest tests -q
 ```
 
@@ -475,7 +474,7 @@ python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 
 ## 12. Assurance
 
-- **458 automated tests**, all passing.
+- **439 automated tests**, all passing.
 - **Every rule has a passing and a failing fixture**, so no rule can silently stop working.
 - **Deterministic** — identical input always produces identical output; verified by test.
 - **Every automated PASS/FAIL carries evidence**: field, expected, observed and XPath.

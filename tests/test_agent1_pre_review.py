@@ -22,7 +22,7 @@ def test_run_on_sample_workbook(agent, sample_xml_path):
 
     assert report.report_type == "PRE_TECHNICAL_REVIEW"
     assert report.workbook["name"] == "TestAIBIDashboards"
-    assert summary["rules_evaluated"] >= 20
+    assert summary["rules_evaluated"] == 19
     assert summary["overall_status"] == Status.FAIL.value
     assert summary["by_status"][Status.FAIL.value] > 0
     assert summary["by_status"][Status.FAIL.value] >= 1
@@ -34,8 +34,6 @@ def test_findings_cover_the_known_defects(agent, sample_xml_path):
     for finding in report.findings:
         statuses.setdefault(finding.rule_id, set()).add(finding.status)
 
-    assert Status.FAIL in statuses["CTL-LAYOUT-001"]
-    assert Status.FAIL in statuses["CTL-LAYOUT-002"]
     assert Status.FAIL in statuses["CTL-LAYOUT-003"]
     assert Status.FAIL in statuses["CTL-LAYOUT-004"]
     assert statuses["CTL-TYPO-001"] == {Status.FAIL}  # declares Tableau Medium
@@ -62,11 +60,11 @@ def test_compliant_workbook_passes(agent, compliant_xml_path):
 
 def test_checklist_is_populated(agent, sample_xml_path):
     report = agent.run(sample_xml_path)
-    assert len(report.checklist) == 43
+    assert len(report.checklist) == 19
+    assert {r.sheet for r in report.checklist} == {"Agent Review"}
     answered = {r.item_id: r.pass_flag for r in report.checklist}
-    assert answered["TR-11"] == "N"      # 9 views
-    assert answered["AR-10"] == "N"      # same rule on the Agent Review tab
-    assert answered["TR-24"] == "Manual"  # load time
+    assert answered["AR-10"] == "N"      # 9 views
+    assert set(answered.values()) <= {"Y", "N"}
 
 
 def test_rule_subset_execution(rules_dir, checklist_path, sample_xml_path):
@@ -80,12 +78,13 @@ def test_rule_subset_execution(rules_dir, checklist_path, sample_xml_path):
 
 def test_category_filter(rules_dir, checklist_path, sample_xml_path):
     agent = PreTechnicalReviewAgent(
-        rules_path=rules_dir, checklist_path=checklist_path, categories=["Typography"]
+        rules_path=rules_dir, checklist_path=checklist_path, categories=["Template"]
     )
     assert {f.rule_id for f in agent.run(sample_xml_path).findings} == {
+        "CTL-STRUCT-002",
+        "CTL-CONTENT-001",
         "CTL-TYPO-001",
-        "CTL-TYPO-002",
-        "CTL-TYPO-003",
+        "CTL-COLOR-001",
     }
 
 
@@ -108,7 +107,7 @@ def test_run_and_export_writes_all_artifacts(agent, sample_xml_path, tmp_path):
     assert data["summary"]["overall_status"] == report.summary["overall_status"]
 
     workbook = openpyxl.load_workbook(artifacts.excel_path)
-    assert "QC Findings" in workbook.sheetnames
+    assert workbook.sheetnames == ["Agent Review"]
 
 
 def test_results_are_deterministic(agent, sample_xml_path):

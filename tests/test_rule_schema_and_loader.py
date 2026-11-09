@@ -83,15 +83,12 @@ def test_missing_required_key():
 
 # -- repository ------------------------------------------------------------
 def test_repository_loads_shipped_rules(repository):
-    assert len(repository) >= 20
+    assert len(repository) == 19
     assert {
-        "CTL-LAYOUT-001",
-        "CTL-LAYOUT-002",
         "CTL-LAYOUT-003",
         "CTL-LAYOUT-004",
         "CTL-TYPO-001",
         "CTL-COLOR-001",
-        "CTL-PERF-001",
         "CTL-STRUCT-001",
         "CTL-CONTENT-001",
         "CTL-CHART-001",
@@ -101,20 +98,25 @@ def test_repository_loads_shipped_rules(repository):
 
 def test_repository_metadata(repository):
     metadata = repository.as_dict()
-    assert metadata["rule_count"] >= 20
-    assert any(source.endswith("layout.yaml") for source in metadata["sources"])
-    assert metadata["versions"]["layout.yaml"] == "2.0.0"
+    assert metadata["rule_count"] == 19
+    assert any(s.endswith("design_questions.yaml") for s in metadata["sources"])
+    assert metadata["versions"]["design_questions.yaml"] == "3.0.0"
 
 
 def test_repository_filtering(repository):
     assert repository.filtered(rule_ids=["CTL-TYPO-001"]).rule_ids == ["CTL-TYPO-001"]
-    assert repository.filtered(categories=["Layout"]).rule_ids == [
-        "CTL-LAYOUT-001",
-        "CTL-LAYOUT-002",
+    assert repository.filtered(categories=["Design"]).rule_ids == [
         "CTL-LAYOUT-003",
+        "CTL-COLOR-002",
+        "CTL-STRUCT-004",
         "CTL-LAYOUT-004",
+        "CTL-TYPO-002",
+        "CTL-TYPO-003",
+        "CTL-CHART-001",
+        "CTL-CHART-002",
+        "CTL-STRUCT-001",
     ]
-    assert "CTL-COLOR-001" in repository.filtered(categories=["Colour"]).rule_ids
+    assert "CTL-COLOR-001" in repository.filtered(categories=["Template"]).rule_ids
     assert repository.filtered(tags=["padding"]).rule_ids == ["CTL-LAYOUT-004"]
 
 

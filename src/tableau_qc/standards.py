@@ -37,6 +37,7 @@ class ContentStandards:
     interactivity_phrases: Tuple[str, ...] = ()
     logo_max_x: int = 12500
     logo_max_y: int = 12500
+    placeholder_image_pattern: str = r"(?i)^(untitled|image|new|copy|screenshot)"
     naming_defect_patterns: Tuple[str, ...] = ()
     raw_calculation_pattern: str = r"Calculation_\d{6,}"
     misspellings: Mapping[str, str] = field(default_factory=dict)
@@ -46,6 +47,10 @@ class ContentStandards:
     @property
     def required_metadata_elements(self) -> Tuple[str, ...]:
         return tuple(self.metadata_elements)
+
+    @property
+    def placeholder_image_regex(self) -> Pattern[str]:
+        return re.compile(self.placeholder_image_pattern)
 
     @property
     def naming_defect_regex(self) -> Pattern[str]:
@@ -135,6 +140,9 @@ def load_standards(path: PathLike = DEFAULT_STANDARDS_PATH) -> ContentStandards:
         ),
         logo_max_x=int(logo.get("upper_left_max_x", 12500)),
         logo_max_y=int(logo.get("upper_left_max_y", 12500)),
+        placeholder_image_pattern=str(
+            logo.get("placeholder_name_pattern", r"(?i)^(untitled|image|new|copy|screenshot)")
+        ),
         naming_defect_patterns=patterns,
         raw_calculation_pattern=raw_calculation,
         misspellings=misspellings,

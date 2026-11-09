@@ -1,0 +1,122 @@
+version: "3.0.0"
+metadata:
+  name: Agent Review - Analytics template questions (rows 5-8)
+  standard: "Analytics Tableau Design & Performance Guide, Version 3.0 (29 October 2026)"
+  checklist: "draft Tableau Dashboard Review - [Report Name].xlsx / Agent Review"
+  owner: "Analytics BI QC"
+  note: >
+    One rule per Agent Review question. Every rule resolves to PASS or FAIL;
+    none may return ADVISORY or MANUAL_REVIEW. Where a required value is not
+    declared in the workbook XML the rule fails closed, because compliance has
+    not been demonstrated.
+
+rules:
+  - id: CTL-STRUCT-002
+    title: Official logo is in the upper left corner
+    description: >
+      Every dashboard must carry the approved logo in the upper-left corner.
+      Both the position and the asset name are checked; a placeholder name such
+      as Untitled.png means the final asset has not been applied.
+    category: Template
+    scope: workbook
+    severity: HIGH
+    standard_ref: "Design & Performance Guide v3.0, Layout - Required Dashboard Elements"
+    checklist_ref: "Agent Review!B5"
+    tags: [template, logo, branding]
+    assertions:
+      - field: dashboards_without_upper_left_logo
+        operator: is_empty
+        description: Every dashboard needs an image object in the top-left corner
+      - field: placeholder_image_count
+        operator: equals
+        value: 0
+        description: No image asset may keep a placeholder file name
+    evidence_fields:
+      - logo_defect_count
+    on_missing: FAIL
+    message_pass: "Every dashboard places an approved logo asset in the upper-left corner."
+    message_fail: "Logo placement or asset naming is not compliant: {observed}."
+    recommendation: >
+      Place the approved logo (amp'd logo for amp'd dashboards, Cotality
+      logomark otherwise) in the upper-left corner of every dashboard and
+      replace any placeholder image with the final branded asset.
+
+  - id: CTL-CONTENT-001
+    title: Metadata complete (data update date, dashboard contact, data owner)
+    description: >
+      The template footer or sidebar must carry the data update date, the
+      dashboard contact and the data owner.
+    category: Template
+    scope: workbook
+    severity: HIGH
+    standard_ref: "Design & Performance Guide v3.0, Layout - Required Dashboard Elements"
+    checklist_ref: "Agent Review!B6"
+    tags: [template, metadata]
+    assertions:
+      - field: missing_metadata_elements
+        operator: is_empty
+        description: Data update date, dashboard contact and data owner labels
+    evidence_fields:
+      - metadata_elements_present
+    on_missing: FAIL
+    message_pass: "All required metadata elements are present."
+    message_fail: "Required metadata elements are missing: {observed}."
+    recommendation: >
+      Complete the template footer or sidebar with Data Last Updated, Dashboard
+      Contact and Data Owner.
+
+  - id: CTL-TYPO-001
+    title: Arial used throughout, Arial Black for worksheet titles
+    description: >
+      Arial is the standard font for all text and Arial Black is used for
+      worksheet titles. Workbook formatting and formatted text runs are both
+      checked.
+    category: Template
+    scope: workbook
+    severity: HIGH
+    standard_ref: "Design & Performance Guide v3.0, Typography"
+    checklist_ref: "Agent Review!B7"
+    tags: [template, typography, font]
+    assertions:
+      - field: style.font_families
+        operator: all_in
+        value:
+          - Arial
+          - Arial Black
+        description: Every declared font-family must be an approved Arial variant
+    evidence_fields:
+      - style.font_sizes
+    # A workbook declaring no font inherits Tableau's default, which is not
+    # Arial, so an empty declaration is treated as non-compliant.
+    treat_empty_as_missing: true
+    on_missing: FAIL
+    message_pass: "All declared fonts are approved Arial variants ({observed})."
+    message_fail: "Non-approved fonts are declared: {observed}."
+    recommendation: >
+      In Tableau Desktop choose Format > Workbook, set All fonts to Arial, then
+      set Worksheet Titles to Arial Black.
+
+  - id: CTL-COLOR-001
+    title: Current Cotality branding colours used
+    description: >
+      Mark colours must come from Cotality's palettes. Tableau's built-in
+      palettes are not brand compliant.
+    category: Template
+    scope: workbook
+    severity: HIGH
+    standard_ref: "Design & Performance Guide v3.0, Colors"
+    checklist_ref: "Agent Review!B8"
+    tags: [template, colour, branding]
+    assertions:
+      - field: built_in_palettes_used
+        operator: is_empty
+        description: No Tableau built-in palette may be assigned to marks
+    evidence_fields:
+      - custom_palettes
+      - mark_colours
+    on_missing: FAIL
+    message_pass: "All mark colour palettes are Cotality brand palettes."
+    message_fail: "Non-brand Tableau palettes are assigned to marks: {observed}."
+    recommendation: >
+      Remove Tableau 10 / Tableau 20 palette assignments and re-encode marks
+      using the Cotality-Extended or CotalitySecondary custom palettes.

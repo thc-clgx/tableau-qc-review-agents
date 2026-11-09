@@ -21,8 +21,9 @@ def _results(definition, repository, path):
 
 
 def test_checklist_loads_every_question(checklist_definition):
-    assert len(checklist_definition.items) == 43
-    assert checklist_definition.sheets() == ["Agent Review", "Tech Review"]
+    """The agent owns the Agent Review tab only."""
+    assert len(checklist_definition.items) == 19
+    assert checklist_definition.sheets() == ["Agent Review"]
     assert checklist_definition.answer_column == "C"
     assert checklist_definition.comment_column == "D"
 
@@ -33,39 +34,61 @@ def test_checklist_rule_references_exist(checklist_definition, repository):
 
 
 def test_checklist_item_rows(checklist_definition):
-    item = next(i for i in checklist_definition.items if i.item_id == "TR-11")
-    assert item.cell == "B11"
-    assert item.row == 11
+    item = next(i for i in checklist_definition.items if i.item_id == "AR-10")
+    assert item.cell == "B10"
+    assert item.row == 10
     assert item.rule_ids == ["CTL-LAYOUT-003"]
 
 
 def test_compliant_workbook_answers_yes(checklist_definition, repository, compliant_xml_path):
     results = _results(checklist_definition, repository, compliant_xml_path)
-    assert results["TR-11"].status is Status.PASS
-    assert results["TR-11"].pass_flag == "Y"
-    assert results["TR-14"].pass_flag == "Y"
+    assert results["AR-10"].status is Status.PASS
     assert results["AR-10"].pass_flag == "Y"
+    assert results["AR-13"].pass_flag == "Y"
 
 
 def test_non_compliant_workbook_answers_no(checklist_definition, repository, non_compliant_xml_path):
     results = _results(checklist_definition, repository, non_compliant_xml_path)
-    assert results["TR-11"].status is Status.FAIL
-    assert results["TR-11"].pass_flag == "N"
-    assert "at most 6 views" in results["TR-11"].recommendation
-    assert "CTL-LAYOUT-003" in results["TR-11"].evidence_summary
+    assert results["AR-10"].status is Status.FAIL
+    assert results["AR-10"].pass_flag == "N"
+    assert "at most 6 views" in results["AR-10"].recommendation
+    assert "CTL-LAYOUT-003" in results["AR-10"].evidence_summary
 
 
-def test_unsupported_questions_are_manual(checklist_definition, repository, compliant_xml_path):
-    results = _results(checklist_definition, repository, compliant_xml_path)
-    manual = results["TR-24"]  # load time cannot be measured from XML
-    assert manual.status is Status.MANUAL_REVIEW
-    assert manual.pass_flag == "Manual"
-    assert manual.automated is False
-    assert "runtime measurement" in manual.recommendation.lower()
+def test_every_answer_is_binary(checklist_definition, repository, non_compliant_xml_path):
+    """The Pass column carries Y or N only - never Review or Manual."""
+    for results in (
+        _results(checklist_definition, repository, non_compliant_xml_path),
+    ):
+        assert {r.pass_flag for r in results.values()} <= {"Y", "N"}
+        assert len(results) == 19
 
 
-def test_rules_not_evaluated_fall_back_to_manual(checklist_definition, repository, compliant_xml_path):
-    subset = repository.filtered(rule_ids=["CTL-LAYOUT-001"])
+def test_not_applicable_answers_yes(checklist_definition, repository, compliant_xml_path):
+    """Nothing to violate is compliance, so N/A reports Y."""
+    from tableau_qc.domain.findings import ChecklistResult
+
+    result = ChecklistResult(
+        item_id="AR-11",
+        section=None,
+        question="q",
+        status=Status.NOT_APPLICABLE,
+    )
+    assert result.pass_flag == "Y"
+
+
+def test_manual_review_answers_no():
+    """Undemonstrated compliance answers N, with the reason in the comment."""
+    from tableau_qc.domain.findings import ChecklistResult
+
+    result = ChecklistResult(
+        item_id="AR-07", section=None, question="q", status=Status.MANUAL_REVIEW
+    )
+    assert result.pass_flag == "N"
+
+
+def test_rules_not_evaluated_fall_back_to_manual(checklist_definition, repository, compliant_xml_path):  # noqa: E501
+    subset = repository.filtered(rule_ids=["CTL-TYPO-001"])
     findings = RuleEngine(subset).execute(parse_fixture(compliant_xml_path))
     results = {
         r.item_id: r
@@ -73,14 +96,14 @@ def test_rules_not_evaluated_fall_back_to_manual(checklist_definition, repositor
             checklist_definition, findings, evaluated_rule_ids=subset.rule_ids
         )
     }
-    assert results["TR-11"].status is Status.MANUAL_REVIEW
-    assert "not evaluated" in results["TR-11"].recommendation
+    assert results["AR-10"].status is Status.MANUAL_REVIEW
+    assert "not evaluated" in results["AR-10"].recommendation
 
 
 def test_metadata(checklist_definition):
     metadata = checklist_metadata(checklist_definition)
-    assert metadata["item_count"] == 43
-    assert metadata["automated_item_count"] == 40
+    assert metadata["item_count"] == 19
+    assert metadata["automated_item_count"] == 19
 
 
 def test_invalid_checklist_rejected(tmp_path):

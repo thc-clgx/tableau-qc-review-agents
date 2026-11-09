@@ -4,9 +4,9 @@
 > Cotality *Analytics Tableau Design & Performance Guide v3.0* and the
 > *Tableau Dashboard Review* checklist.
 
-[![tests](https://img.shields.io/badge/tests-458%20passing-brightgreen)]()
+[![tests](https://img.shields.io/badge/tests-439%20passing-brightgreen)]()
 [![python](https://img.shields.io/badge/python-3.10%2B-blue)]()
-[![rules](https://img.shields.io/badge/QC%20rules-27-orange)]()
+[![rules](https://img.shields.io/badge/QC%20rules-19-orange)]()
 
 Two agents replace a manual review checklist. Every automated answer cites the exact
 XPath in the workbook that justifies it, and the agent **never guesses** — if a fact is
@@ -19,7 +19,9 @@ not in the XML it says so instead of passing the item.
 | **Answers** | "Does this meet our standards?" | "Were the cited issues fixed, and did the fix break anything?" |
 | **Output** | Filled checklist + findings (XLSX / JSON / PDF) | Per-issue resolution + regression check |
 
-**Coverage:** 19 of 19 questions on the *Agent Review* tab are answered automatically.
+**Scope:** the agent owns the **Agent Review** tab only — 19 questions, 19 rules, one
+rule per question, every answer **Y or N**. The Peer Review and Tech Review tabs are the
+human review portions and are left untouched.
 
 ---
 
@@ -123,7 +125,7 @@ Add `--strict` to fail the command on a dangling reference (useful in CI).
 
 | File | Audience |
 |---|---|
-| `<name>_pre_review.xlsx` | **The developer** — your checklist template with `Pass (Y/N)` and `Recommended Changes` filled in, plus `QC Summary` and `QC Findings` tabs |
+| `<name>_pre_review.xlsx` | **The developer** — the **Agent Review tab only**, with `Pass (Y/N)` and `Recommended Changes` filled in |
 | `<name>_pre_review.json` | **Agent 2** — keep this, it is the baseline audit |
 | `<name>_pre_review.pdf` | Stakeholders |
 
@@ -191,20 +193,20 @@ Comments carrying a `rule_id` are verified automatically; the rest appear on an
 
 ## Understanding the output
 
-| Verdict | Excel | Meaning |
-|---|---|---|
-| **PASS** | `Y` | Verified from the XML, with evidence |
-| **FAIL** | `N` | Violation proven, with evidence |
-| **ADVISORY** | `Review` | A heuristic or opinion. **Never counts as a pass** |
-| **MANUAL** | `Manual` | The agent abstained — the fact is not in the XML |
+The **Pass (Y/N)** column carries a binary answer for every one of the 19 questions.
 
-Design principle: **a confidently wrong `Y` is worse than an honest "I don't know."**
-Where a check is only partly automatable, the comment column states the *residual manual
-check* — e.g. the logo rule verifies position and filename, then tells the reviewer the
-image content still needs visual confirmation.
+| Answer | Meaning |
+|---|---|
+| **Y** | The standard is met, evidenced from the XML |
+| **N** | The standard is not met — the **Recommended Changes** column says what to fix |
 
-Every automated PASS/FAIL carries: the field checked, the operator, the expected value,
-the observed value, and the source XPath.
+Rules **fail closed**: when a required value is not declared in the workbook, compliance
+has not been demonstrated, so the answer is `N` and the comment explains what to check.
+A rule with nothing to assess (for example a colour rule on a workbook with no colour
+encodings) cannot be violated and answers `Y`.
+
+Every answer carries evidence behind it: the field checked, the operator, the expected
+value, the observed value, and the source XPath — available in the JSON report.
 
 ---
 
@@ -223,14 +225,14 @@ the observed value, and the source XPath.
 │   ├── settings.py     Paths (all env-overridable)
 │   └── cli.py          `tableau-qc` entry point
 ├── config/
-│   ├── rules/          27 QC rules across 7 YAML files
-│   ├── checklist/      Question -> rule mapping (Agent Review + Tech Review)
+│   ├── rules/          19 QC rules, one per Agent Review question
+│   ├── checklist/      Question -> rule mapping (Agent Review)
 │   └── standards/      Word lists, label phrases, tolerances
 ├── examples/
 │   ├── workbooks/      Example workbook XML (original + remediated)
 │   ├── standards/      Style guide and checklist template
 │   └── reviews/        A human review report and SME feedback sample
-├── tests/              458 tests incl. per-rule and security fixtures
+├── tests/              439 tests incl. per-rule and security fixtures
 ├── scripts/            Fixture generation and remediation helpers
 └── docs/
     ├── USER_GUIDE.md   Full operating guide
@@ -246,7 +248,7 @@ lives in `config/`:
 
 | File | Controls |
 |---|---|
-| `config/rules/*.yaml` | The 27 QC rules — thresholds, severities, messages, remediation text |
+| `config/rules/*.yaml` | The 19 QC rules — thresholds, severities, messages, remediation text |
 | `config/checklist/*.yaml` | Which rules answer which checklist question |
 | `config/standards/content.yaml` | Spelling word list, metadata label phrases, naming patterns, logo tolerance |
 
@@ -304,7 +306,7 @@ Validate at any time with `tableau-qc rules --strict`.
 ## Development
 
 ```bash
-.venv/bin/python -m pytest tests -q          # 458 tests
+.venv/bin/python -m pytest tests -q          # 439 tests
 .venv/bin/python -m pytest tests -q --cov    # with coverage (if pytest-cov installed)
 .venv/bin/tableau-qc rules --strict          # validate the rule repository
 ```
@@ -332,18 +334,21 @@ Validate at any time with `tableau-qc rules --strict`.
 
 ## Limitations
 
-Some checklist items are **permanently manual** — the information does not exist in a
-workbook file, and an LLM reading the same XML is bounded by the same limit:
+Every question on the **Agent Review** tab is answered automatically. Subjective items
+were removed from that tab by the reviewers, so the agent does not need to abstain.
 
-| Check | Why |
-|---|---|
-| Load time under 8 seconds | A runtime measurement; needs a live server |
-| Logo is the correct image and legible | XML stores the *filename*, not the image |
-| Metadata values are correct | Presence is verified; whether the date is current is not |
-| Filters and actions behave correctly | Structure is checked; runtime behaviour is not |
-| Filter has too many unique values | Values live in the data extract, not the workbook |
+Some checks necessarily verify a *proxy* for the standard, because the XML does not carry
+the underlying fact. These still answer Y/N, but a reviewer may wish to spot-check them:
 
-The **Peer Review** tab is deliberately out of scope — it is a human sign-off instrument.
+| Check | What the agent verifies | What it cannot see |
+|---|---|---|
+| Logo in the upper left | Image zone position and asset filename | The image itself, or its contrast |
+| Metadata complete | All three labels are present | Whether the date is current or the owner correct |
+| Filter lists with many values | The filter control type | The number of distinct values (lives in the extract) |
+| Views organised by importance | Zone geometry and size hierarchy | Business importance of each view |
+
+The **Peer Review** and **Tech Review** tabs are deliberately out of scope — they are the
+human review portions of the checklist.
 
 ### Not implemented by design
 
@@ -351,12 +356,6 @@ The **Peer Review** tab is deliberately out of scope — it is a human sign-off 
   and are tested. LLM enrichment is opt-in, can only add *advisory* text, and
   **never receives workbook XML**.
 - **TWB/TWBX extraction, Tableau Server/Cloud download, workbook conversion.**
-
-### Known gap in the checklist
-
-The current checklist has no dashboard-size question, so `CTL-LAYOUT-001/002` (1600×900)
-are enforced and appear in `QC Findings`, but answer no checklist cell.
-`tableau-qc rules` reports this as `NOTE  enforced but not on the checklist`.
 
 ---
 

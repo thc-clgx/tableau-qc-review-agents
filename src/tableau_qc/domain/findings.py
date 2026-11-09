@@ -15,7 +15,6 @@ class Status(str, Enum):
 
     PASS = "PASS"
     FAIL = "FAIL"
-    ADVISORY = "ADVISORY"
     MANUAL_REVIEW = "MANUAL_REVIEW"
     NOT_APPLICABLE = "NOT_APPLICABLE"
 
@@ -25,15 +24,11 @@ class Status(str, Enum):
         return _STATUS_RANK[self]
 
 
-#: ADVISORY sits above PASS (it is an unresolved observation) but below
-#: MANUAL_REVIEW, because the agent *did* evaluate it - it simply cannot claim
-#: the result as hard evidence.
 _STATUS_RANK = {
     Status.NOT_APPLICABLE: 0,
     Status.PASS: 1,
-    Status.ADVISORY: 2,
-    Status.MANUAL_REVIEW: 3,
-    Status.FAIL: 4,
+    Status.MANUAL_REVIEW: 2,
+    Status.FAIL: 3,
 }
 
 
@@ -152,13 +147,14 @@ class ChecklistResult:
 
     @property
     def pass_flag(self) -> str:
-        return {
-            Status.PASS: "Y",
-            Status.FAIL: "N",
-            Status.ADVISORY: "Review",
-            Status.MANUAL_REVIEW: "Manual",
-            Status.NOT_APPLICABLE: "N/A",
-        }[self.status]
+        """Binary answer for the review checklist.
+
+        NOT_APPLICABLE reports ``Y``: when a workbook contains nothing the rule
+        could apply to, it cannot violate the standard. MANUAL_REVIEW reports
+        ``N`` because compliance has not been demonstrated - the reason is
+        carried in the Recommended Changes column.
+        """
+        return "Y" if self.status in (Status.PASS, Status.NOT_APPLICABLE) else "N"
 
     def as_dict(self) -> Dict[str, Any]:
         return {
