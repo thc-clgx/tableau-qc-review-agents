@@ -68,11 +68,22 @@ class ExcelReportWriter:
 
         The Peer Review and Tech Review tabs are the human review portions, so
         the agent's output carries its own tab alone.
+
+        The template's workbook view points at the Agent Review tab by index
+        (``firstSheet``/``activeTab``). Once the surrounding sheets are gone
+        those indices fall outside the remaining range, which Excel reports as
+        a corrupt file, so the view is reset to the single surviving sheet.
         """
         answered = {r.sheet for r in results if r.sheet}
         for name in list(workbook.sheetnames):
             if name not in answered:
                 del workbook[name]
+
+        for view in getattr(workbook, "views", []) or []:
+            view.firstSheet = 0
+            view.activeTab = 0
+        for index, sheet in enumerate(workbook.worksheets):
+            sheet.views.sheetView[0].tabSelected = index == 0
 
     # -- workbook plumbing -------------------------------------------------
     def _open_workbook(self) -> XLWorkbook:

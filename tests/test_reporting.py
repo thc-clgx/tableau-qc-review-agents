@@ -140,3 +140,65 @@ def test_pdf_contains_only_the_checklist(review_report, tmp_path):
     # No findings dump, no before/after evidence, no other checklist tab.
     for unwanted in ("Evidence before", "Evidence after", "QC Findings", "Tech Review"):
         assert unwanted not in text, f"PDF still carries '{unwanted}'"
+
+
+# -- OOXML package integrity ----------------------------------------------
+def _validate_xlsx_package(path) -> list:
+    """Check the parts Excel checks when it decides a file is corrupt."""
+    import re
+    import xml.etree.ElementTree as ET
+    import zipfile
+
+    archive = zipfile.ZipFile(path)
+    names = set(archive.namelist())
+    problems = []
+
+    if archive.testzip() is not None:
+        problems.append("corrupt zip entry")
+
+    for rels in [n for n in names if n.endswith(".rels")]:
+        base = rels.rsplit("_rels/", 1)[0]
+        for rel in ET.fromstring(archive.read(rels)):
+            target = rel.get("Target", "")
+            if target.startswith(("http", "../")) or rel.get("TargetMode") == "External":
+                continue
+            part = target.lstrip("/") if target.startswith("/") else base + target
+            if part not in names:
+                problems.append(f"{rels}: dangling relationship target {target}")
+
+    workbook_xml = archive.read("xl/workbook.xml").decode()
+    sheets = re.findall(r'<sheet name="([^"]+)"', workbook_xml)
+
+    # A view pointing past the last sheet is what Excel reports as corruption.
+    for attribute in ("firstSheet", "activeTab"):
+        match = re.search(rf'{attribute}="(\d+)"', workbook_xml)
+        if match and int(match.group(1)) >= len(sheets):
+            problems.append(
+                f"{attribute}={match.group(1)} is out of range for {len(sheets)} sheet(s)"
+            )
+
+    for defined in re.findall(r"<definedName[^>]*>([^<]*)</definedName>", workbook_xml):
+        sheet_ref = defined.split("!")[0].strip("'")
+        if sheet_ref and sheet_ref not in sheets and not sheet_ref.startswith("["):
+            problems.append(f"definedName references a removed sheet: {sheet_ref}")
+
+    return problems
+
+
+def test_review_xlsx_package_is_valid(review_report, tmp_path):
+    """Deleting template sheets must not leave Excel with dangling indices."""
+    template = excel_template_or_none()
+    if template is None:
+        pytest.skip("review template not available")
+    path = ExcelReportWriter(template).write_review(review_report, tmp_path / "pkg.xlsx")
+    assert _validate_xlsx_package(path) == []
+
+
+def test_review_xlsx_reopens_cleanly(review_report, tmp_path):
+    template = excel_template_or_none()
+    if template is None:
+        pytest.skip("review template not available")
+    path = ExcelReportWriter(template).write_review(review_report, tmp_path / "reopen.xlsx")
+    reopened = openpyxl.load_workbook(path)
+    assert reopened.sheetnames == ["Agent Review"]
+    assert reopened["Agent Review"].cell(row=10, column=3).value in {"Y", "N"}
