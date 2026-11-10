@@ -15,7 +15,7 @@ class VerificationStatus(str, Enum):
     UNRESOLVED = "UNRESOLVED"
     PARTIALLY_RESOLVED = "PARTIALLY_RESOLVED"
     CANNOT_VERIFY = "CANNOT_VERIFY"
-    NEW_REGRESSION = "NEW_REGRESSION"
+    NEW_FAILURE = "NEW_FAILURE"
     UNCHANGED_PASS = "UNCHANGED_PASS"
 
 
@@ -104,12 +104,12 @@ class VerificationReport:
         return {
             "total_comparisons": len(self.comparisons),
             "by_verification": counts,
-            "regression_count": counts[VerificationStatus.NEW_REGRESSION.value],
+            "new_failure_count": counts[VerificationStatus.NEW_FAILURE.value],
             "unresolved_count": counts[VerificationStatus.UNRESOLVED.value]
             + counts[VerificationStatus.PARTIALLY_RESOLVED.value],
             "sign_off_ready": counts[VerificationStatus.UNRESOLVED.value] == 0
             and counts[VerificationStatus.PARTIALLY_RESOLVED.value] == 0
-            and counts[VerificationStatus.NEW_REGRESSION.value] == 0,
+            and counts[VerificationStatus.NEW_FAILURE.value] == 0,
         }
 
     def as_dict(self) -> Dict[str, Any]:

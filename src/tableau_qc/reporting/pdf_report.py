@@ -160,7 +160,7 @@ def _verification_story(report: VerificationReport, styles, story: List) -> None
         f"Generated: {report.generated_at[:10]} &nbsp;|&nbsp; "
         f"Passed: <b>{passed} of {total}</b> &nbsp;|&nbsp; "
         f"Resolved: {summary['by_verification']['RESOLVED']} &nbsp;|&nbsp; "
-        f"Regressions: {summary['regression_count']}",
+        f"New failures: {summary['new_failure_count']}",
         styles,
         story,
     )

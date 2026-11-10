@@ -291,7 +291,7 @@ class PostTechnicalReviewAgent:
                 key,
                 None,
                 after,
-                VerificationStatus.NEW_REGRESSION,
+                VerificationStatus.NEW_FAILURE,
                 note="Object is new in the revised workbook and violates the standard.",
             )
         if after.status is Status.MANUAL_REVIEW:
@@ -354,7 +354,7 @@ class PostTechnicalReviewAgent:
                 note = "Still not verifiable from the workbook XML."
         else:  # baseline PASS or NOT_APPLICABLE
             if after_status is Status.FAIL:
-                verification = VerificationStatus.NEW_REGRESSION
+                verification = VerificationStatus.NEW_FAILURE
                 note = "This check passed in the baseline and fails in the revised workbook."
             elif after_status is Status.PASS:
                 verification = VerificationStatus.UNCHANGED_PASS

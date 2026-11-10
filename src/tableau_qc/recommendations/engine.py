@@ -79,12 +79,11 @@ class RecommendationEngine:
             action = f"Manual verification required. {base}"
         else:
             action = base
-        target = finding.target_name or finding.target_id
         return Recommendation(
             rule_id=finding.rule_id,
             finding_key=finding.key,
-            target=target,
+            target=finding.where,
             severity=finding.severity.value,
-            action=f"{action} (target: {target})",
+            action=action,
             evidence=evidence_lines,
         )

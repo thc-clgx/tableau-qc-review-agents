@@ -1,6 +1,6 @@
 # Tableau XML Dashboard Review Agent — User Guide
 
-**Version 2.0 · 9 November 2026**
+**Version 2.1 · 10 November 2026**
 Automated QC review of Tableau workbooks against the Cotality *Analytics Tableau Design &
 Performance Guide v3.0* and the *Tableau Dashboard Review* checklist.
 
@@ -74,6 +74,11 @@ review portions and are handed back blank for a reviewer to complete.
 ---
 
 ## 3. One-time setup
+
+> **Python is required on the machine that runs the agent.** The command-line
+> tool needs Python 3.10 or later. This is a developer-facing prerequisite; a
+> productionised service would remove it for end users, who would upload a
+> workbook and receive the report without installing anything.
 
 ```bash
 cd /Users/thc/Documents/BI_review_agent
@@ -176,6 +181,27 @@ With an explicit output name and folder:
 | **Y** | The standard is met, evidenced from the workbook XML |
 | **N** | The standard is not met — the Recommended Changes column says what to fix |
 
+### Locating a failure in a multi-dashboard workbook
+
+A workbook usually holds several dashboards, so every `N` names the objects it
+applies to. The advice is stated once, followed by the affected objects, each
+qualified by the dashboard that owns it:
+
+```
+Reduce the dashboard to at most 6 views. Consolidate related KPI worksheets
+into combined cards, or move secondary analysis to another dashboard.
+Affected (2): Model Surveillance Executive Summary; Underperforming Models
+```
+
+```
+Select the filter control, open Customize and enable Show Apply Button.
+Affected (2): Model Surveillance Executive Summary > Performance Details;
+              Model Surveillance Expansion > Surveillance Implementation Detail
+```
+
+The JSON report carries the same information per finding, plus the source
+XPath, for anyone who needs to trace a verdict back to the file.
+
 Rules **fail closed**. When a required value is not declared in the workbook, compliance
 has not been demonstrated, so the answer is `N` and the comment explains what to verify.
 For example, a workbook that declares no font inherits Tableau's default, which is not
@@ -201,14 +227,14 @@ rule on a workbook with no colour encodings reports `Y`.
 | `UNRESOLVED` | Still failing |
 | `PARTIALLY_RESOLVED` | Some assertions of the rule fixed, others not |
 | `CANNOT_VERIFY` | The object was deleted, or the value is no longer declared |
-| `NEW_REGRESSION` | **Passed before, fails now — the fix broke something** |
+| `NEW_FAILURE` | **Passed before, fails now — the change introduced a new defect** |
 | `UNCHANGED_PASS` | Was fine, still fine |
 
 4. Produces before/after evidence and a sign-off recommendation.
 
 > **Why the regression check matters.** During testing, removing a view to satisfy the
 > 6-view limit left its worksheet orphaned — a new violation created by the fix itself.
-> Agent 2 flagged it as `NEW_REGRESSION`. That is the category of defect a human
+> Agent 2 flagged it as `NEW_FAILURE`. That is the category of defect a human
 > re-reading a checklist almost always misses.
 
 ### 5.2 Where to put the revised XML

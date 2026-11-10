@@ -170,7 +170,7 @@ Supplying both the JSON and the baseline XML gives the richest before/after evid
 | `UNRESOLVED` | Still failing |
 | `PARTIALLY_RESOLVED` | Some assertions fixed, others not |
 | `CANNOT_VERIFY` | Object deleted, or the value is no longer declared |
-| `NEW_REGRESSION` | **Passed before, fails now — the fix broke something** |
+| `NEW_FAILURE` | **Passed before, fails now — the change introduced a new defect** |
 | `UNCHANGED_PASS` | Was fine, still fine |
 
 ### SME feedback format

@@ -33,7 +33,7 @@ VERIFICATION_FILLS: Dict[str, PatternFill] = {
     VerificationStatus.UNCHANGED_PASS.value: PatternFill("solid", fgColor="E2EFDA"),
     VerificationStatus.UNRESOLVED.value: PatternFill("solid", fgColor="FFC7CE"),
     VerificationStatus.PARTIALLY_RESOLVED.value: PatternFill("solid", fgColor="FCE4D6"),
-    VerificationStatus.NEW_REGRESSION.value: PatternFill("solid", fgColor="F8696B"),
+    VerificationStatus.NEW_FAILURE.value: PatternFill("solid", fgColor="F8696B"),
     VerificationStatus.CANNOT_VERIFY.value: PatternFill("solid", fgColor="FFEB9C"),
 }
 
@@ -215,7 +215,7 @@ class ExcelReportWriter:
             ["Revised SHA-256", (report.revised or {}).get("source_sha256", "")],
             ["Comparisons", summary["total_comparisons"]],
             ["Unresolved", summary["unresolved_count"]],
-            ["New regressions", summary["regression_count"]],
+            ["New regressions", summary["new_failure_count"]],
             ["Sign-off ready", "YES" if summary["sign_off_ready"] else "NO"],
         ]
         for status, count in summary["by_verification"].items():

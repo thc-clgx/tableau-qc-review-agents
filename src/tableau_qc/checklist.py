@@ -21,6 +21,9 @@ PathLike = Union[str, Path]
 MAX_EVIDENCE_LINES = 6
 MAX_CELL_LENGTH = 1500
 
+#: Affected objects listed in full before the remainder is summarised.
+MAX_LOCATIONS = 12
+
 
 class ChecklistError(Exception):
     """Raised when a checklist definition cannot be loaded."""
@@ -181,6 +184,35 @@ def _truncate(text: str, limit: int = MAX_CELL_LENGTH) -> str:
     return text if len(text) <= limit else text[: limit - 3] + "..."
 
 
+def _format_recommendation(failing: Sequence[Finding], residual: str = "") -> str:
+    """Advice stated once, followed by the objects it applies to.
+
+    A reviewer needs to know *where* to act. Findings are grouped by the advice
+    they share, and each group lists the affected objects qualified by the
+    dashboard that owns them, so a question answered N on a multi-dashboard
+    workbook points at the exact place to fix.
+    """
+    grouped: Dict[str, List[str]] = {}
+    for finding in failing:
+        advice = " ".join((finding.recommendation or finding.title).split())
+        where = finding.where
+        locations = grouped.setdefault(advice, [])
+        if where not in locations:
+            locations.append(where)
+
+    blocks: List[str] = []
+    for advice, locations in grouped.items():
+        shown = locations[:MAX_LOCATIONS]
+        listed = "; ".join(shown)
+        if len(locations) > MAX_LOCATIONS:
+            listed += f"; and {len(locations) - MAX_LOCATIONS} more"
+        blocks.append(f"{advice}\nAffected ({len(locations)}): {listed}")
+
+    if residual:
+        blocks.append(f"Residual manual check: {residual}")
+    return "\n\n".join(blocks)
+
+
 def build_checklist_results(
     definition: ChecklistDefinition,
     findings: Sequence[Finding],
@@ -254,12 +286,7 @@ def build_checklist_results(
                     f"{evidence.summary()} ({evidence.source.xpath if evidence.source else 'n/a'})"
                 )
                 break
-        recommendations: List[str] = []
-        for finding in failing:
-            if finding.recommendation and finding.recommendation not in recommendations:
-                recommendations.append(" ".join(finding.recommendation.split()))
-        if item.residual:
-            recommendations.append(f"Residual manual check: {item.residual}")
+        recommendation = _format_recommendation(failing, item.residual)
 
         results.append(
             ChecklistResult(
@@ -270,7 +297,7 @@ def build_checklist_results(
                 sheet=item.sheet,
                 cell=item.cell,
                 rule_ids=item.rule_ids,
-                recommendation=_truncate(" ".join(recommendations)),
+                recommendation=_truncate(recommendation),
                 evidence_summary=_truncate("\n".join(evidence_lines)),
                 automated=True,
             )

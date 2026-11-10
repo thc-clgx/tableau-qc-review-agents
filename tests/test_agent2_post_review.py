@@ -79,9 +79,9 @@ def test_new_regression_detected(agent, rule_fixtures_dir):
         baseline_xml=rule_fixtures_dir / "CTL-LAYOUT-003_pass.xml",
     )
     assert _verification(report.comparisons, "CTL-LAYOUT-003") == {
-        VerificationStatus.NEW_REGRESSION
+        VerificationStatus.NEW_FAILURE
     }
-    assert report.summary["regression_count"] >= 1
+    assert report.summary["new_failure_count"] >= 1
     assert report.summary["sign_off_ready"] is False
 
 
@@ -91,7 +91,7 @@ def test_new_object_failing_is_a_regression(agent, rule_fixtures_dir):
         baseline_xml=rule_fixtures_dir / "CTL-LAYOUT-004_pass.xml",
     )
     new_zone = next(c for c in report.comparisons if c.target_id == "Dashboard A:zone-11")
-    assert new_zone.verification is VerificationStatus.NEW_REGRESSION
+    assert new_zone.verification is VerificationStatus.NEW_FAILURE
     assert new_zone.baseline_status is None
     assert "new in the revised workbook" in new_zone.note
 
@@ -102,7 +102,7 @@ def test_regression_on_existing_object_is_detected(agent, rule_fixtures_dir):
         baseline_xml=rule_fixtures_dir / "CTL-LAYOUT-004_pass.xml",
     )
     comparison = next(c for c in report.comparisons if c.rule_id == "CTL-LAYOUT-004")
-    assert comparison.verification is VerificationStatus.NEW_REGRESSION
+    assert comparison.verification is VerificationStatus.NEW_FAILURE
     assert comparison.baseline_status is Status.PASS
     assert "passed in the baseline" in comparison.note
 
@@ -254,7 +254,7 @@ def test_realistic_revision_of_the_sample_workbook(agent, fixtures_dir, sample_x
         VerificationStatus.RESOLVED,
         VerificationStatus.UNRESOLVED,
     }
-    assert VerificationStatus.NEW_REGRESSION not in {
+    assert VerificationStatus.NEW_FAILURE not in {
         v for values in by_rule.values() for v in values
     }
     assert report.summary["sign_off_ready"] is False

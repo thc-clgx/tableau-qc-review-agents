@@ -92,6 +92,7 @@ class Finding:
     target_type: str
     target_id: str
     target_name: Optional[str] = None
+    target_location: Optional[str] = None
     category: Optional[str] = None
     severity: Severity = Severity.MEDIUM
     message: str = ""
@@ -101,6 +102,14 @@ class Finding:
     standard_ref: Optional[str] = None
     automated: bool = True
     tags: List[str] = field(default_factory=list)
+
+    @property
+    def where(self) -> str:
+        """Readable location, e.g. 'Exec Summary > Performance Details'."""
+        name = self.target_name or self.target_id
+        if self.target_location and self.target_location != name:
+            return f"{self.target_location} > {name}"
+        return name
 
     @property
     def key(self) -> str:
@@ -119,6 +128,8 @@ class Finding:
                 "type": self.target_type,
                 "id": self.target_id,
                 "name": self.target_name,
+                "location": self.target_location,
+                "where": self.where,
             },
             "message": self.message,
             "evidence": [e.as_dict() for e in self.evidence],

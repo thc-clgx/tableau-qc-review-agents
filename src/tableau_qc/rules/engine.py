@@ -245,6 +245,7 @@ class RuleEngine:
             target_type=target_type,
             target_id=target_id,
             target_name=target_name,
+            target_location=_location_of(target_id),
             category=rule.category,
             severity=rule.severity,
             message=message,
@@ -283,6 +284,18 @@ class RuleEngine:
             return message.format(**context)
         except (KeyError, IndexError, ValueError):
             return message
+
+
+def _location_of(target_id: str) -> Optional[str]:
+    """Dashboard that owns a target, taken from its composite id.
+
+    Zone and image ids are formatted ``<dashboard>:zone-<n>``, so the dashboard
+    name is the part before the final separator.
+    """
+    for marker in (":zone-", ":image-"):
+        if marker in target_id:
+            return target_id.split(marker)[0]
+    return None
 
 
 def _is_empty(value: Any) -> bool:
