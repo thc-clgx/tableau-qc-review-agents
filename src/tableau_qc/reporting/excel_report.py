@@ -11,15 +11,10 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet as XLWorksheet
 
-from ..domain.comparison import VerificationReport, VerificationStatus
-from ..domain.findings import ChecklistResult, Finding, ReviewReport, Status
+from ..domain.comparison import VerificationReport
+from ..domain.findings import ChecklistResult, ReviewReport, Status
 
 PathLike = Union[str, Path]
-
-SUMMARY_SHEET = "QC Summary"
-FINDINGS_SHEET = "QC Findings"
-VERIFICATION_SHEET = "QC Verification"
-SME_SHEET = "SME Feedback"
 
 STATUS_FILLS: Dict[str, PatternFill] = {
     Status.PASS.value: PatternFill("solid", fgColor="C6EFCE"),
@@ -28,14 +23,6 @@ STATUS_FILLS: Dict[str, PatternFill] = {
     Status.NOT_APPLICABLE.value: PatternFill("solid", fgColor="D9D9D9"),
 }
 
-VERIFICATION_FILLS: Dict[str, PatternFill] = {
-    VerificationStatus.RESOLVED.value: PatternFill("solid", fgColor="C6EFCE"),
-    VerificationStatus.UNCHANGED_PASS.value: PatternFill("solid", fgColor="E2EFDA"),
-    VerificationStatus.UNRESOLVED.value: PatternFill("solid", fgColor="FFC7CE"),
-    VerificationStatus.PARTIALLY_RESOLVED.value: PatternFill("solid", fgColor="FCE4D6"),
-    VerificationStatus.NEW_FAILURE.value: PatternFill("solid", fgColor="F8696B"),
-    VerificationStatus.CANNOT_VERIFY.value: PatternFill("solid", fgColor="FFEB9C"),
-}
 
 HEADER_FILL = PatternFill("solid", fgColor="1E1405")
 HEADER_FONT = Font(bold=True, color="F7EFE2")
@@ -172,174 +159,6 @@ class ExcelReportWriter:
             cell.fill = STATUS_FILLS[result.status.value]
             for column in (3, 6, 7):
                 sheet.cell(row=sheet.max_row, column=column).alignment = WRAP
-
-    # -- summary -----------------------------------------------------------
-    def _write_summary(self, workbook: XLWorkbook, rows: Sequence[Sequence[object]]) -> None:
-        sheet = self._sheet(workbook, SUMMARY_SHEET)
-        self._write_header(sheet, ["Metric", "Value"], [42, 90])
-        for row in rows:
-            sheet.append(list(row))
-            sheet.cell(row=sheet.max_row, column=2).alignment = WRAP
-
-    @staticmethod
-    def _review_summary_rows(report: ReviewReport) -> List[List[object]]:
-        summary = report.summary
-        workbook_info = report.workbook or {}
-        counts = workbook_info.get("counts", {})
-        rows: List[List[object]] = [
-            ["Report type", report.report_type],
-            ["Generated at (UTC)", report.generated_at],
-            ["Workbook", workbook_info.get("name", "")],
-            ["Source XML", workbook_info.get("source_path", "")],
-            ["Source SHA-256", workbook_info.get("source_sha256", "")],
-            ["Rule repository checksum", (report.rule_repository or {}).get("checksum", "")],
-            ["Rules evaluated", summary["rules_evaluated"]],
-            ["Rules failed", summary["rules_failed"]],
-            ["Overall status", summary["overall_status"]],
-        ]
-        for status, count in summary["by_status"].items():
-            rows.append([f"Findings - {status}", count])
-        for key, value in counts.items():
-            rows.append([f"Workbook objects - {key}", value])
-        return rows
-
-    @staticmethod
-    def _verification_summary_rows(report: VerificationReport) -> List[List[object]]:
-        summary = report.summary
-        rows: List[List[object]] = [
-            ["Report type", report.report_type],
-            ["Generated at (UTC)", report.generated_at],
-            ["Baseline source", (report.baseline or {}).get("source_path", "")],
-            ["Baseline SHA-256", (report.baseline or {}).get("source_sha256", "")],
-            ["Revised source", (report.revised or {}).get("source_path", "")],
-            ["Revised SHA-256", (report.revised or {}).get("source_sha256", "")],
-            ["Comparisons", summary["total_comparisons"]],
-            ["Unresolved", summary["unresolved_count"]],
-            ["New regressions", summary["new_failure_count"]],
-            ["Sign-off ready", "YES" if summary["sign_off_ready"] else "NO"],
-        ]
-        for status, count in summary["by_verification"].items():
-            rows.append([f"Verification - {status}", count])
-        return rows
-
-    # -- findings ----------------------------------------------------------
-    def _write_findings(self, workbook: XLWorkbook, findings: Sequence[Finding]) -> None:
-        sheet = self._sheet(workbook, FINDINGS_SHEET)
-        self._write_header(
-            sheet,
-            [
-                "Rule ID",
-                "Title",
-                "Category",
-                "Severity",
-                "Status",
-                "Target type",
-                "Target",
-                "Message",
-                "Evidence (field / expected / observed / XPath)",
-                "Recommended change",
-                "Checklist",
-                "Standard",
-            ],
-            [16, 42, 14, 10, 16, 20, 28, 60, 80, 60, 16, 42],
-        )
-        for finding in findings:
-            evidence = "\n".join(
-                f"{e.field_path} | expected {e.operator} {e.expected!r} | observed {e.observed!r} | "
-                f"{e.source.xpath if e.source else 'n/a'}"
-                for e in finding.evidence
-            )
-            sheet.append(
-                [
-                    finding.rule_id,
-                    finding.title,
-                    finding.category or "",
-                    finding.severity.value,
-                    finding.status.value,
-                    finding.target_type,
-                    finding.target_name or finding.target_id,
-                    finding.message,
-                    evidence,
-                    finding.recommendation or "",
-                    finding.checklist_ref or "",
-                    finding.standard_ref or "",
-                ]
-            )
-            sheet.cell(row=sheet.max_row, column=5).fill = STATUS_FILLS[finding.status.value]
-            for column in (8, 9, 10):
-                sheet.cell(row=sheet.max_row, column=column).alignment = WRAP
-
-    # -- verification ------------------------------------------------------
-    def _write_verification(self, workbook: XLWorkbook, report: VerificationReport) -> None:
-        sheet = self._sheet(workbook, VERIFICATION_SHEET)
-        self._write_header(
-            sheet,
-            [
-                "Rule ID",
-                "Title",
-                "Target",
-                "Verification",
-                "Baseline status",
-                "Revised status",
-                "Evidence before",
-                "Evidence after",
-                "Recommended change",
-                "Note",
-            ],
-            [16, 42, 30, 20, 16, 16, 70, 70, 60, 40],
-        )
-        for comparison in report.comparisons:
-            sheet.append(
-                [
-                    comparison.rule_id,
-                    comparison.title,
-                    comparison.target_id,
-                    comparison.verification.value,
-                    comparison.baseline_status.value if comparison.baseline_status else "",
-                    comparison.revised_status.value if comparison.revised_status else "",
-                    _format_evidence(comparison.baseline_evidence),
-                    _format_evidence(comparison.revised_evidence),
-                    comparison.recommendation or "",
-                    comparison.note,
-                ]
-            )
-            sheet.cell(row=sheet.max_row, column=4).fill = VERIFICATION_FILLS[
-                comparison.verification.value
-            ]
-            for column in (7, 8, 9, 10):
-                sheet.cell(row=sheet.max_row, column=column).alignment = WRAP
-
-    def _write_sme_feedback(self, workbook: XLWorkbook, report: VerificationReport) -> None:
-        sheet = self._sheet(workbook, SME_SHEET)
-        self._write_header(
-            sheet,
-            ["Rule ID", "Target", "Author", "Raised on", "Status", "Comment"],
-            [16, 30, 20, 16, 18, 80],
-        )
-        for item in report.sme_feedback:
-            sheet.append(
-                [
-                    item.rule_id or "",
-                    item.target_id or "",
-                    item.author or "",
-                    item.raised_on or "",
-                    item.status.value,
-                    item.comment,
-                ]
-            )
-            sheet.cell(row=sheet.max_row, column=6).alignment = WRAP
-
-
-def _format_evidence(evidence: Sequence[dict]) -> str:
-    lines = []
-    for item in evidence:
-        if item.get("note") == "context":
-            continue
-        lines.append(
-            f"{item.get('field')} | expected {item.get('operator')} {item.get('expected')!r} | "
-            f"observed {item.get('observed')!r} | {item.get('xpath') or 'n/a'}"
-        )
-    return "\n".join(lines)
 
 
 def write_excel_report(
